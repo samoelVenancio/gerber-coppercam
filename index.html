@@ -295,7 +295,8 @@ function coordIn(mm, pad) {
 }
 
 /* Lê um Gerber, devolve texto convertido + geometria em mm */
-function processGerber(text, label) {
+function newApTable() { return { codes: new Map(), next: 20 }; }
+function processGerber(text, label, apt) {
   const toks = tokenize(text);
   const warns = [];
   let fmt = { zeros: 'L', int: 4, dec: 5 }, units = null, fsSeen = false;
@@ -327,9 +328,13 @@ function processGerber(text, label) {
   if (!units) units = 'mm';
   const k = units === 'mm' ? 1 : MM;          // unidade do arquivo -> mm
   const num = makeNum(fmt);
-  // aberturas: novos códigos a partir de D20 (D10 e D11 ficam como "fantasma")
+  // Aberturas: códigos novos a partir de D20 (D10 e D11 ficam como "fantasma"), numerados numa
+  // tabela compartilhada entre Bottom, Top e contorno (`apt`). O CopperCAM junta as aberturas dos
+  // arquivos carregados pelo código: se o contorno define um D21 diferente do D21 do Bottom, os pads
+  // do Bottom ficam com a abertura do contorno e somem. Com a tabela, o mesmo código é sempre a
+  // mesma abertura em todos os arquivos.
+  if (!apt) apt = newApTable();
   order.sort((a, b) => a - b);
-  const map = new Map(); order.forEach((c, i) => map.set(c, 20 + i));
   const apsMM = new Map();
   for (const [c, a] of aps) {
     let p = a.params.slice();
@@ -340,18 +345,23 @@ function processGerber(text, label) {
     `G04 Convertido para CopperCAM: ${label.replace(/[*%]/g, '')}*`,
     '%MOIN*%', '%FSLAX24Y24*%', '%IPPOS*%',
     '%ADD10C,0.0010*%', '%ADD11C,0.0010*%'];
+  const map = new Map();
   for (const c of order) {
     const a = apsMM.get(c);
-    if (!['C', 'R', 'O', 'P'].includes(a.type)) continue;
+    if (!['C', 'R', 'O', 'P'].includes(a.type)) { map.set(c, apt.next++); continue; }
     let ps;
     if (a.type === 'P') ps = [inch4(a.p[0]), ...a.p.slice(1).map(v => String(v))];
     else ps = a.p.map(inch4);
-    head.push(`%ADD${map.get(c)}${a.type},${ps.join('X')}*%`);
+    const def = `${a.type},${ps.join('X')}`;
+    if (!apt.codes.has(def)) apt.codes.set(def, apt.next++);
+    const code = apt.codes.get(def);
+    map.set(c, code);
+    head.push(`%ADD${code}${def}*%`);
   }
   const body = [];
   const objs = [];
   let x = 0, y = 0, interp = 1, quad = 75, region = false, contour = null, contours = [], pol = 'D', cur = null, lastOp = 1;
-  const undef = new Set(); let g74 = false;
+  const undef = new Set(); let g74 = false, movedTo = false;
   const closeContour = () => { if (contour && contour.length > 1) contours.push(contour); contour = null; };
   for (const t of toks) {
     if (t.ext) {
@@ -365,20 +375,16 @@ function processGerber(text, label) {
     if (!raw || raw.startsWith('G04') || raw.startsWith('G4 ')) continue;
     const s = raw.replace(/\s+/g, '');
     if (/^M0?[0-2]$/.test(s)) continue;
-    // ---- texto convertido
-    let o = s.replace(/([XYIJ])([+-]?[\d.]+)/g, (m, a, v) => a + coordIn(num(v) * k, a === 'X' || a === 'Y'));
-    o = o.replace(/D0*(\d+)/g, (m, d) => {
-      d = +d; if (d < 10) return 'D0' + d;
-      if (!map.has(d)) { undef.add(d); return 'D' + d; }
-      return 'D' + map.get(d);
-    });
-    body.push(o + '*');
-    // ---- interpretação geométrica (mm)
+    // ---- interpretação (mm) e texto convertido.
+    // A saída imita o gerbv, que o CopperCAM lê sem erro: cada linha com G01/G02/G03 explícito e
+    // X e Y completos; fora de região, cada trecho vira um par D02 (vai ao início) + D01; e cada
+    // arco vem logo depois de um G75 (ou G74). Cadeias de D01 seguidas e um G75 só no começo,
+    // como o EasyEDA grava, não funcionaram no CopperCAM.
     for (const m of s.matchAll(/G0*(\d+)/g)) {
       const g = +m[1];
       if (g >= 1 && g <= 3) interp = g;
-      else if (g === 36) { region = true; contours = []; contour = null; }
-      else if (g === 37) { closeContour(); if (contours.length) objs.push({ t: 'reg', pol, contours }); region = false; contours = []; }
+      else if (g === 36) { region = true; contours = []; contour = null; body.push('G36*'); movedTo = false; }
+      else if (g === 37) { closeContour(); if (contours.length) objs.push({ t: 'reg', pol, contours }); region = false; contours = []; body.push('G37*'); movedTo = false; }
       else if (g === 74) { quad = 74; g74 = true; }
       else if (g === 75) quad = 75;
     }
@@ -386,19 +392,34 @@ function processGerber(text, label) {
       ci = s.match(/I([+-]?[\d.]+)/), cj = s.match(/J([+-]?[\d.]+)/);
     const dm = s.match(/D0*(\d+)$/);
     let op = null;
-    if (dm) { const d = +dm[1]; if (d >= 10) { cur = d; } else { op = d; lastOp = d; } }
+    if (dm) {
+      const d = +dm[1];
+      if (d >= 10) {
+        cur = d;
+        if (!map.has(d)) { undef.add(d); body.push(`G54D${d}*`); } else body.push(`G54D${map.get(d)}*`);
+      } else { op = d; lastOp = d; }
+    }
     if (op === null && (cx || cy)) op = lastOp;
     if (op === null) continue;
     const nx = cx ? num(cx[1]) * k : x, ny = cy ? num(cy[1]) * k : y;
     const ii = ci ? num(ci[1]) * k : 0, jj = cj ? num(cj[1]) * k : 0;
+    const XY = (px, py) => `X${coordIn(px, true)}Y${coordIn(py, true)}`;
     if (op === 2) {
       if (region) { closeContour(); contour = [{ x: nx, y: ny }]; }
+      body.push(`G01${XY(nx, ny)}D02*`); movedTo = true;
     } else if (op === 1) {
       const seg = { x: nx, y: ny, arc: interp === 1 ? null : { cx: x + ii, cy: y + jj, dir: interp } };
       if (region) { if (!contour) contour = [{ x, y }]; contour.push(seg); }
-      else objs.push({ t: 'draw', pol, ap: cur, x1: x, y1: y, x2: nx, y2: ny, arc: seg.arc });
+      else {
+        objs.push({ t: 'draw', pol, ap: cur, x1: x, y1: y, x2: nx, y2: ny, arc: seg.arc });
+        if (!movedTo) body.push(`G01${XY(x, y)}D02*`);
+      }
+      if (interp === 1) body.push(`G01${XY(nx, ny)}D01*`);
+      else body.push(`G${quad}*`, `G0${interp}${XY(nx, ny)}I${coordIn(ii, false)}J${coordIn(jj, false)}D01*`);
+      movedTo = false;
     } else if (op === 3) {
       objs.push({ t: 'flash', pol, ap: cur, x: nx, y: ny });
+      body.push(`G01${XY(nx, ny)}D03*`); movedTo = false;
     }
     x = nx; y = ny;
   }
@@ -1132,7 +1153,8 @@ function parseAll(files) {
   const fds = files.filter((f) => /\.(DRL|XLN)$/i.test(f.name));
   if (!fb) throw new Error('Não achei o cobre do lado Bottom (arquivo Gerber_BottomLayer.GBL). Exporte pelo EasyEDA Pro em Export → PCB Fabrication File (Gerber) e solte o .zip inteiro.');
   if (!fds.length) throw new Error('Não achei a furação (.DRL) no que foi carregado.');
-  const bottom = processGerber(fb.text, 'Bottom'), outline = fo ? processGerber(fo.text, 'Contorno') : null, top = ft ? processGerber(ft.text, 'Top') : null;
+  const apt = newApTable(); // códigos de abertura únicos entre os arquivos (ver processGerber)
+  const bottom = processGerber(fb.text, 'Bottom', apt), top = ft ? processGerber(ft.text, 'Top', apt) : null, outline = fo ? processGerber(fo.text, 'Contorno', apt) : null;
   let holes = [], slots = [], warns = [...bottom.warns, ...(outline ? outline.warns : []), ...(top ? top.warns : [])];
   const viaKeys = new Set();
   for (const f of fds) { const r = parseDrill(f.text, f.name); holes.push(...r.holes); slots.push(...r.slots); warns.push(...r.warns);
