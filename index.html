@@ -11,26 +11,26 @@
 :root{color-scheme:light}
 body{margin:0}
 img{max-width:100%}
-/* Layout: bancada de trabalho — faixa de entrada, faixa de veredito, prévia + achados lado a lado, detalhes embaixo */
+/* Layout: bancada de trabalho — entrada + configuração no topo, veredito, prévia navegável ao lado dos achados, detalhes embaixo */
 :root{
   --bg:#EEF1EC; --surface:#FBFCFA; --ink:#17201B; --muted:#56635B; --line:#D2D9D2;
   --copper:#A9531F; --copper-soft:#F3E3D6; --on-copper:#FFFFFF;
-  --ok:#2E7A4C; --ok-soft:#DDEFE3; --warn:#9A6410; --warn-soft:#F6EAD0; --bad:#B13A2E; --bad-soft:#F6DEDA;
-  --display:"Archivo", "Helvetica Neue", Arial, sans-serif;
-  --body:"Archivo", "Helvetica Neue", Arial, sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --ok:#2E7A4C; --ok-soft:#DDEFE3; --warn:#9A6410; --warn-soft:#F6EAD0; --bad:#B13A2E; --bad-soft:#F6DEDA; --sel:#1F6FB2; --sel-soft:#DCEAF6;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif; --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111613; --surface:#18201B; --ink:#E4EAE5; --muted:#98A69D; --line:#2B3530;
   --copper:#E0905C; --copper-soft:#3A2619; --on-copper:#1A110B;
-  --ok:#62C08A; --ok-soft:#1C3326; --warn:#E3AE55; --warn-soft:#3A2D14; --bad:#EE7E70; --bad-soft:#3E1F1B; color-scheme:dark}}
+  --ok:#62C08A; --ok-soft:#1C3326; --warn:#E3AE55; --warn-soft:#3A2D14; --bad:#EE7E70; --bad-soft:#3E1F1B; --sel:#7DB7EA; --sel-soft:#16293A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111613; --surface:#18201B; --ink:#E4EAE5; --muted:#98A69D; --line:#2B3530;
   --copper:#E0905C; --copper-soft:#3A2619; --on-copper:#1A110B;
-  --ok:#62C08A; --ok-soft:#1C3326; --warn:#E3AE55; --warn-soft:#3A2D14; --bad:#EE7E70; --bad-soft:#3E1F1B; color-scheme:dark}
+  --ok:#62C08A; --ok-soft:#1C3326; --warn:#E3AE55; --warn-soft:#3A2D14; --bad:#EE7E70; --bad-soft:#3E1F1B; --sel:#7DB7EA; --sel-soft:#16293A; color-scheme:dark}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
-.wrap{max-width:1120px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;align-items:stretch}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:stretch}
 .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--copper)}
 h1{font-family:var(--display);font-stretch:78%;font-weight:800;font-size:clamp(34px,5vw,52px);line-height:1;margin:6px 0 10px;text-wrap:balance;letter-spacing:-.01em}
 .lede{color:var(--muted);max-width:52ch;margin:0}
@@ -40,49 +40,75 @@ h1{font-family:var(--display);font-stretch:78%;font-weight:800;font-size:clamp(3
 .drop strong{font-family:var(--display);font-stretch:85%;font-size:20px;font-weight:700}
 .drop p{margin:0;color:var(--muted);font-size:14px}
 .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.drop .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;position:relative;z-index:1}
 .mono{font-family:var(--mono);font-size:13px}
-button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px}
+button{font:inherit;cursor:pointer;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px}
 button:hover{border-color:var(--copper)}
-button:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
 button.primary{background:var(--copper);border-color:var(--copper);color:var(--on-copper);font-weight:600;padding:11px 18px}
 button.primary:hover{filter:brightness(1.07)}
 button:disabled{opacity:.5;cursor:not-allowed}
-#results{display:flex;flex-direction:column;gap:22px}
-[hidden]{display:none!important}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+h2{font-family:var(--display);font-stretch:85%;font-size:19px;font-weight:700;margin:0 0 10px;text-wrap:balance}
+.config{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);gap:18px 26px}
+.config fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.config legend{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;padding:0}
+.opt{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;align-items:start;padding:9px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.opt:has(input:checked){border-color:var(--copper);background:var(--copper-soft)}
+.opt input{margin:3px 0 0;accent-color:var(--copper)}
+.opt b{display:block;font-size:14px} .opt span{font-size:13px;color:var(--muted)}
+.params{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}
+.param label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+.param input{width:100%;box-sizing:border-box;font-family:var(--mono);font-size:14px;padding:7px 9px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.param small{display:block;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
 .verdict{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
 .verdict .left{display:flex;flex-direction:column;gap:6px;min-width:0}
 .pill{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;padding:4px 12px;border-radius:999px;width:fit-content}
 .pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
-.source{color:var(--muted);font-size:13px}
-.stats{display:flex;flex-wrap:wrap;gap:8px 28px;margin:0}
+.source{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.stats{display:flex;flex-wrap:wrap;gap:8px 26px;margin:0}
 .stats div{display:flex;flex-direction:column}
 .stats dt{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .stats dd{margin:0;font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
 .actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .msg{font-size:13px;color:var(--muted);max-width:34ch;text-align:right}
-.main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:start}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
-h2{font-family:var(--display);font-stretch:85%;font-size:19px;font-weight:700;margin:0 0 10px;text-wrap:balance}
-.preview canvas{width:100%;height:auto;display:block;border-radius:6px;background:#0D1712}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin-top:10px}
+#results{display:flex;flex-direction:column;gap:20px}
+.main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:6px 12px;background:var(--surface)}
+.seg button[aria-pressed="true"]{background:var(--copper);color:var(--on-copper)}
+.zoom{display:inline-flex;gap:6px;align-items:center}
+.zoom button{min-width:34px;padding:6px 10px}
+.readout{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:15ch;text-align:right}
+.stage{position:relative;border-radius:6px;overflow:hidden;background:#0D1712;touch-action:none;cursor:grab}
+.stage.drag{cursor:grabbing}
+.stage canvas{display:block;width:100%;height:100%}
+.hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin-top:8px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-ol.finds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-ol.finds li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);border-left-width:4px}
-ol.finds li.bad{border-left-color:var(--bad)} ol.finds li.warn{border-left-color:var(--warn)} ol.finds li.info{border-left-color:var(--line)} ol.finds li.ok{border-left-color:var(--ok)}
+ol.finds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:760px;overflow:auto}
+ol.finds li{border-radius:8px;border:1px solid var(--line);border-left:4px solid var(--line)}
+ol.finds li.bad{border-left-color:var(--bad)} ol.finds li.warn{border-left-color:var(--warn)} ol.finds li.ok{border-left-color:var(--ok)}
+ol.finds li.on{background:var(--sel-soft);border-color:var(--sel)}
+.find{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 12px;width:100%;text-align:left;border:0;background:transparent;border-radius:8px}
+button.find:hover{background:var(--bg)}
 .n{font-family:var(--mono);font-size:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--muted)}
 li.bad .n{background:var(--bad-soft);color:var(--bad)} li.warn .n{background:var(--warn-soft);color:var(--warn)}
-.finds p{margin:0} .finds .where{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.find p{margin:0} .find .where{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tag{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--bg);color:var(--muted);margin-left:6px}
+.details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:14px}
 th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
 td.num{font-family:var(--mono)}
+tr.pick{cursor:pointer} tr.pick:hover td{background:var(--bg)} tr.pick.on td{background:var(--sel-soft)}
+tr.pick td:first-child{color:var(--sel);text-decoration:underline;text-underline-offset:3px}
 ul.done,ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:12px 14px}
 footer{color:var(--muted);font-size:12px}
-@media (max-width:900px){header,.main{grid-template-columns:minmax(0,1fr)} .details{grid-template-columns:minmax(0,1fr)} .actions{align-items:flex-start} .msg{text-align:left}}
+@media (max-width:960px){header,.main,.config{grid-template-columns:minmax(0,1fr)} .details{grid-template-columns:minmax(0,1fr)} .actions{align-items:flex-start} .msg{text-align:left}}
+@media (max-width:520px){.params{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -98,10 +124,27 @@ footer{color:var(--muted);font-size:12px}
     <label class="drop" id="drop" for="file">
       <input type="file" id="file" accept=".zip,.gbl,.gko,.gtl,.drl,.GBL,.GKO,.GTL,.DRL" multiple aria-label="Escolher o .zip do Gerber">
       <strong>Solte aqui o .zip do Gerber</strong>
-      <p>Ou clique aqui para escolher. No EasyEDA Pro: <span class="mono">Export → PCB Fabrication File (Gerber)</span>. Pode ser o .zip inteiro ou só os arquivos <span class="mono">.GBL</span>, <span class="mono">.GKO</span> e <span class="mono">.DRL</span>.</p>
-      <div class="row"><span class="mono" id="loaded">Nenhum arquivo carregado</span></div>
+      <p>Ou clique aqui para escolher. No EasyEDA Pro: <span class="mono">Export → PCB Fabrication File (Gerber)</span>. Pode ser o .zip inteiro ou só os arquivos <span class="mono">.GBL</span>, <span class="mono">.GTL</span>, <span class="mono">.GKO</span> e <span class="mono">.DRL</span>.</p>
+      <span class="mono" id="loaded">Nenhum arquivo carregado</span>
     </label>
   </header>
+
+  <section class="panel config" aria-label="Configuração da placa e da ferramenta">
+    <fieldset>
+      <legend>Tipo de placa</legend>
+      <label class="opt"><input type="radio" name="layers" id="ly-single" value="single" checked><div><b>Face simples</b><span>Fresa só o Bottom. Trilhas na Top viram jumpers de fio.</span></div></label>
+      <label class="opt"><input type="radio" name="layers" id="ly-dual" value="dual"><div><b>Dupla face</b><span>Fresa Top e Bottom. Vias viram fio ou rebite soldado dos dois lados.</span></div></label>
+    </fieldset>
+    <fieldset>
+      <legend>Ferramentas</legend>
+      <div class="params">
+        <div class="param"><label for="p-tool">Largura de corte da isolação (mm)</label><input id="p-tool" inputmode="decimal" value="0,30"><small>Quanto a fresa ou broca V tira de cobre na profundidade usada. Folga menor que isso vira curto.</small></div>
+        <div class="param"><label for="p-edge">Distância mínima da borda (mm)</label><input id="p-edge" inputmode="decimal" value="1,0"><small>Espaço entre o cobre e o contorno, para a fresa de recorte não comer trilha.</small></div>
+        <div class="param"><label for="p-ring">Anel mínimo de cobre (mm)</label><input id="p-ring" inputmode="decimal" value="0,30"><small>Cobre que sobra em volta do furo. Abaixo disso, se a broca desviar, o pad some.</small></div>
+        <div class="param"><label for="p-drills">Brocas disponíveis (mm)</label><input id="p-drills" inputmode="decimal" placeholder="ex.: 0,8; 1,0; 1,2"><small>Opcional. Cada furo usa a menor broca que não fique menor que ele, e o anel é conferido com essa broca.</small></div>
+      </div>
+    </fieldset>
+  </section>
 
   <div id="error" class="err" hidden></div>
 
@@ -109,7 +152,7 @@ footer{color:var(--muted);font-size:12px}
     <div class="panel">
       <h2>O que ela converte</h2>
       <ul class="done">
-        <li>Cobre Bottom e contorno em polegada, formato 2.4, sem comentários nem atributos X2.</li>
+        <li>Cobre, contorno e furação em polegada, formato 2.4, sem comentários nem atributos X2.</li>
         <li>Aberturas renumeradas a partir de D20. O CopperCAM lê errado os pads que caem no D11.</li>
         <li>Furação junta num arquivo só, sem furos repetidos e com furo oblongo trocado por redondo.</li>
       </ul>
@@ -117,72 +160,82 @@ footer{color:var(--muted);font-size:12px}
     <div class="panel">
       <h2>O que ela confere</h2>
       <ul class="done">
-        <li>Folga entre cobres: abaixo de 0,3 mm a fresa não isola; até 0,45 mm, atenção.</li>
-        <li>Cobre a menos de 1 mm da borda, cobre solto e anel de cobre em volta dos furos.</li>
-        <li>Quantas ligações na camada Top viram jumper de fio.</li>
+        <li>Folga entre cobres contra a largura de corte da sua ferramenta.</li>
+        <li>Cobre perto da borda, cobre solto e anel de cobre em volta dos furos.</li>
+        <li>Na face simples, quantas ligações na Top viram jumper de fio.</li>
       </ul>
     </div>
     <div class="panel">
-      <h2>Depois, no CopperCAM</h2>
+      <h2>Na prévia</h2>
       <ol class="steps">
-        <li>Abra o <span class="mono">_Bottom.gbr</span>, depois o <span class="mono">_Contorno.gbr</span> e o <span class="mono">_Furos.drl</span> do pacote.</li>
-        <li>Confira se a placa abriu com o tamanho que a página mostrar.</li>
-        <li>Se aparecer o aviso de furo maior que o pad, responda <strong>Não</strong>.</li>
+        <li>Clique num aviso para ir até o ponto na placa.</li>
+        <li>Clique num diâmetro da furação para ver onde ficam esses furos.</li>
+        <li>Use a roda do mouse ou dois dedos para zoom, e arraste para mover.</li>
       </ol>
     </div>
   </section>
 
   <div id="results" hidden>
-  <section class="verdict" id="verdict" aria-live="polite">
-    <div class="left">
-      <span class="pill" id="pill">Analisando…</span>
-      <span class="source" id="source"></span>
-    </div>
-    <dl class="stats" id="stats"></dl>
-    <div class="actions">
-      <button class="primary" type="button" id="dl" disabled>Baixar pacote para o CopperCAM</button>
-      <span class="msg" id="dlmsg">.zip com cobre, contorno, furação, prévia e relatório</span>
-    </div>
-  </section>
-
-  <section class="main">
-    <div class="panel preview">
-      <h2>Lado do cobre (Bottom), visto de cima</h2>
-      <canvas id="cv" width="800" height="900" aria-label="Prévia do cobre, furos e pontos de atenção"></canvas>
-      <div class="legend">
-        <span><i style="background:#C9824F"></i>cobre</span>
-        <span><i style="background:#0D1712;border:1px solid #6B7D72"></i>sem cobre</span>
-        <span><i style="background:#F2D46B"></i>contorno</span>
-        <span><i style="background:#FF4D3D"></i>corrigir</span>
-        <span><i style="background:#FFB23E"></i>atenção</span>
+    <section class="verdict" aria-live="polite">
+      <div class="left">
+        <span class="pill" id="pill">Analisando…</span>
+        <span class="source" id="source"></span>
       </div>
-    </div>
-    <div class="panel">
-      <h2>O que conferir</h2>
-      <ol class="finds" id="finds"></ol>
-    </div>
-  </section>
+      <dl class="stats" id="stats"></dl>
+      <div class="actions">
+        <button class="primary" type="button" id="dl" disabled>Baixar pacote para o CopperCAM</button>
+        <span class="msg" id="dlmsg">.zip com cobre, contorno, furação, prévia e relatório</span>
+      </div>
+    </section>
 
-  <section class="details">
-    <div class="panel">
-      <h2>Furação</h2>
-      <div style="overflow-x:auto"><table id="drills"><thead><tr><th>Broca</th><th>Furos</th></tr></thead><tbody></tbody></table></div>
-    </div>
-    <div class="panel">
-      <h2>O que a conversão fez</h2>
-      <ul class="done" id="done"></ul>
-    </div>
-    <div class="panel">
-      <h2>No CopperCAM</h2>
-      <ol class="steps">
-        <li><span class="mono">File → Open → New circuit</span>: abra o <span class="mono">_Bottom.gbr</span>.</li>
-        <li>Adicione o <span class="mono">_Contorno.gbr</span> e a furação <span class="mono">_Furos.drl</span>. Não carregue o arquivo de vias do EasyEDA: os furos dele já estão juntos.</li>
-        <li>Confira se a placa abriu com o tamanho mostrado acima. Se aparecer o aviso de furo maior que o pad, responda <strong>Não</strong>.</li>
-      </ol>
-    </div>
-  </section>
+    <section class="main">
+      <div class="panel" id="pv">
+        <div class="toolbar">
+          <div class="seg" id="laysel" role="group" aria-label="Camada mostrada">
+            <button type="button" id="v-bottom" aria-pressed="true">Bottom</button>
+            <button type="button" id="v-top" aria-pressed="false">Top</button>
+          </div>
+          <span class="readout" id="readout" aria-live="off">X –  Y –</span>
+          <div class="zoom">
+            <button type="button" id="z-out" aria-label="Diminuir zoom">−</button>
+            <button type="button" id="z-in" aria-label="Aumentar zoom">+</button>
+            <button type="button" id="z-fit">Placa inteira</button>
+          </div>
+        </div>
+        <div class="stage" id="stage"><canvas id="cv" aria-label="Prévia do cobre com os pontos de atenção. Use a roda do mouse para zoom e arraste para mover."></canvas></div>
+        <p class="hint" id="hint">Visto de cima, como no EasyEDA. Roda do mouse ou dois dedos: zoom. Arrastar: mover. Clique num número para ver o aviso.</p>
+        <div class="legend">
+          <span><i style="background:#C9824F"></i>cobre</span>
+          <span><i style="background:#0D1712;border:1px solid #6B7D72"></i>sem cobre</span>
+          <span><i style="background:#F2D46B"></i>contorno</span>
+          <span><i style="background:#FF4D3D"></i>corrigir</span>
+          <span><i style="background:#FFB23E"></i>atenção</span>
+          <span><i style="background:#4FC3F7"></i>furos destacados</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>O que conferir</h2>
+        <ol class="finds" id="finds"></ol>
+      </div>
+    </section>
+
+    <section class="details">
+      <div class="panel">
+        <h2>Furação</h2>
+        <div style="overflow-x:auto"><table id="drills"><thead><tr id="drillhead"></tr></thead><tbody></tbody></table></div>
+        <p class="hint">Clique num diâmetro para ver esses furos na placa.</p>
+      </div>
+      <div class="panel">
+        <h2>O que a conversão fez</h2>
+        <ul class="done" id="done"></ul>
+      </div>
+      <div class="panel">
+        <h2>No CopperCAM</h2>
+        <ol class="steps" id="steps"></ol>
+      </div>
+    </section>
   </div>
-  <footer>As coordenadas dos avisos são em mm, a partir do canto inferior esquerdo da placa, igual à origem do EasyEDA. A prévia é o lado do cobre visto de cima, como aparece no EasyEDA e no CopperCAM antes de espelhar.</footer>
+  <footer>As coordenadas são em mm, a partir do canto inferior esquerdo da placa, igual à origem do EasyEDA. Os arquivos da placa são processados só neste navegador.</footer>
 </div>
 
 <script>
@@ -443,16 +496,29 @@ if (typeof module !== 'undefined') module.exports = { tokenize, processGerber, p
 </script>
 <script>
 const $ = (id) => document.getElementById(id);
-let lastZip = null, lastName = 'placa';
-
 const fmt = (v, d = 2) => v.toFixed(d).replace('.', ',');
 const at = (x, y) => `(${fmt(x, 1)}; ${fmt(y, 1)})`;
+const SEVORD = { bad: 0, warn: 1, info: 2, ok: 3 };
+const st = { parsed: null, res: null, view: { layer: 'bottom', z: 1, ox: 0, oy: 0 }, sel: -1, hiDia: null, zip: null, base: 'placa', source: '' };
 
-/* ---------- desenho ---------- */
+/* ---------- parâmetros ---------- */
+const numIn = (id, def) => { const v = parseFloat(String($(id).value).replace(',', '.')); return isFinite(v) && v >= 0 ? v : def; };
+function params() {
+  const drills = String($('p-drills').value).split(/[;\s/]+/).map((s) => parseFloat(s.replace(',', '.'))).filter((v) => isFinite(v) && v > 0).sort((a, b) => a - b);
+  return { dual: $('ly-dual').checked, tool: numIn('p-tool', 0.3), edge: numIn('p-edge', 1.0), ring: numIn('p-ring', 0.3), drills };
+}
+function saveParams() { try { localStorage.setItem('gcc-params', JSON.stringify({ dual: $('ly-dual').checked, tool: $('p-tool').value, edge: $('p-edge').value, ring: $('p-ring').value, drills: $('p-drills').value })); } catch (e) {} }
+function loadParams() {
+  try { const p = JSON.parse(localStorage.getItem('gcc-params') || 'null'); if (!p) return;
+    $(p.dual ? 'ly-dual' : 'ly-single').checked = true; for (const k of ['tool', 'edge', 'ring', 'drills']) if (typeof p[k] === 'string') $('p-' + k).value = p[k];
+  } catch (e) {}
+}
+
+/* ---------- desenho vetorial para a máscara ---------- */
 function arcTo(ctx, x1, y1, x2, y2, arc, tx, ty, S) {
   const cx = tx(arc.cx), cy = ty(arc.cy), r = Math.hypot(x1 - arc.cx, y1 - arc.cy) * S;
   let a0 = Math.atan2(ty(y1) - cy, tx(x1) - cx), a1 = Math.atan2(ty(y2) - cy, tx(x2) - cx);
-  const ccw = arc.dir === 3; // G03 = anti-horário; a imagem já está desvirada, então continua anti-horário na tela
+  const ccw = arc.dir === 3;
   if (Math.hypot(x2 - x1, y2 - y1) < 1e-6) a1 = ccw ? a0 - 2 * Math.PI : a0 + 2 * Math.PI;
   ctx.arc(cx, cy, r, a0, a1, ccw);
 }
@@ -495,38 +561,34 @@ function drawObjs(ctx, objs, aps, tx, ty, S) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
-/* ---------- análise ---------- */
-function analyze(bottom, outlineObjs, drill) {
-  const finds = [];
-  const bb = bboxOf(outlineObjs) || bboxOf(bottom.objs);
-  const bw = bb.x1 - bb.x0, bh = bb.y1 - bb.y0;
-  const S = Math.min(25, Math.sqrt(8e6 / (bw * bh)));
-  const W = Math.ceil(bw * S), H = Math.ceil(bh * S), N = W * H;
+/* ---------- análise de uma camada ---------- */
+function analyzeLayer(name, g, G, holes, P) {
+  const { bb, S, W, H } = G, N = W * H, finds = [];
   const tx = (x) => (x - bb.x0) * S, ty = (y) => (bb.y1 - y) * S;
   const fx = (px) => bb.x0 + (px + 0.5) / S, fy = (py) => bb.y1 - (py + 0.5) / S;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d', { willReadFrequently: true });
-  drawObjs(ctx, bottom.objs, bottom.aps, tx, ty, S);
+  drawObjs(ctx, g.objs, g.aps, tx, ty, S);
   const px = ctx.getImageData(0, 0, W, H).data;
   const mask = new Uint8Array(N); for (let i = 0; i < N; i++) mask[i] = px[i * 4 + 3] > 127 ? 1 : 0;
-  // componentes de cobre (4-vizinhança)
-  const lab = new Int32Array(N); const st = new Int32Array(N); let nl = 0; const area = [0], seed = [0];
+  const lab = new Int32Array(N), stk = new Int32Array(N); let nl = 0; const area = [0], seed = [0];
   for (let i = 0; i < N; i++) if (mask[i] && !lab[i]) {
-    nl++; let sp = 0; st[sp++] = i; lab[i] = nl; let a = 0;
-    while (sp) { const p = st[--sp]; a++; const x = p % W;
-      if (x > 0 && mask[p - 1] && !lab[p - 1]) { lab[p - 1] = nl; st[sp++] = p - 1; }
-      if (x < W - 1 && mask[p + 1] && !lab[p + 1]) { lab[p + 1] = nl; st[sp++] = p + 1; }
-      if (p >= W && mask[p - W] && !lab[p - W]) { lab[p - W] = nl; st[sp++] = p - W; }
-      if (p < N - W && mask[p + W] && !lab[p + W]) { lab[p + W] = nl; st[sp++] = p + W; } }
+    nl++; let sp = 0; stk[sp++] = i; lab[i] = nl; let a = 0;
+    while (sp) { const p = stk[--sp]; a++; const x = p % W;
+      if (x > 0 && mask[p - 1] && !lab[p - 1]) { lab[p - 1] = nl; stk[sp++] = p - 1; }
+      if (x < W - 1 && mask[p + 1] && !lab[p + 1]) { lab[p + 1] = nl; stk[sp++] = p + 1; }
+      if (p >= W && mask[p - W] && !lab[p - W]) { lab[p - W] = nl; stk[sp++] = p - W; }
+      if (p < N - W && mask[p + W] && !lab[p + W]) { lab[p + W] = nl; stk[sp++] = p + W; } }
     area.push(a); seed.push(i);
   }
-  // folgas entre ilhas de cobre: propagação a partir das bordas, guardando o pixel de cobre de origem
+  // folgas: frentes que crescem a partir de cada ilha e se encontram
+  const LIM = P.tool + 0.15;
   const owner = new Int32Array(N), src = new Int32Array(N), q = new Int32Array(N); let qh = 0, qt = 0;
   for (let i = 0; i < N; i++) if (mask[i]) {
     owner[i] = lab[i]; src[i] = i; const x = i % W;
     if ((x > 0 && !mask[i - 1]) || (x < W - 1 && !mask[i + 1]) || (i >= W && !mask[i - W]) || (i < N - W && !mask[i + W])) q[qt++] = i;
   }
-  const LIM = 0.45, R = Math.ceil(0.5 * S) + 1, R2 = R * R; const pairs = new Map();
+  const R = Math.ceil((LIM / 2 + 0.06) * S) + 1, R2 = R * R; const pairs = new Map();
   while (qh < qt) {
     const p = q[qh++], x = p % W, y = (p / W) | 0, sp = src[p], sx = sp % W, sy = (sp / W) | 0, lp = owner[p];
     const nb = [x > 0 ? p - 1 : -1, x < W - 1 ? p + 1 : -1, y > 0 ? p - W : -1, y < H - 1 ? p + W : -1];
@@ -534,123 +596,53 @@ function analyze(bottom, outlineObjs, drill) {
       if (n < 0) continue; const ln = owner[n];
       if (ln === 0) { const dx = n % W - sx, dy = ((n / W) | 0) - sy; if (dx * dx + dy * dy <= R2) { owner[n] = lp; src[n] = sp; q[qt++] = n; } }
       else if (ln !== lp) {
-        const sn = src[n], nx = sn % W, ny = (sn / W) | 0, g = (Math.hypot(sx - nx, sy - ny) - 1) / S;
-        if (g < LIM) { const key = lp < ln ? lp * 1e6 + ln : ln * 1e6 + lp; const b = pairs.get(key);
-          if (!b || g < b.g) pairs.set(key, { g, x: fx((sx + nx) / 2), y: fy((sy + ny) / 2) }); }
+        const sn = src[n], nx = sn % W, ny = (sn / W) | 0, gp = (Math.hypot(sx - nx, sy - ny) - 1) / S;
+        if (gp < LIM) { const key = lp < ln ? lp * 1e6 + ln : ln * 1e6 + lp; const b = pairs.get(key);
+          if (!b || gp < b.g) pairs.set(key, { g: gp, x: fx((sx + nx) / 2), y: fy((sy + ny) / 2) }); }
       }
     }
   }
   const gaps = [...pairs.values()].sort((a, b) => a.g - b.g);
+  for (const gp of gaps) finds.push({ sev: gp.g < P.tool ? 'bad' : 'warn', layer: name, x: gp.x, y: gp.y,
+    msg: gp.g < P.tool ? `Folga de ${fmt(gp.g)} mm, menor que o corte da ferramenta (${fmt(P.tool)} mm). A fresa não isola aqui e vira curto.`
+      : `Folga de ${fmt(gp.g)} mm, só ${fmt(gp.g - P.tool)} mm acima do corte da ferramenta. Confira na prévia do CopperCAM.` });
   // borda
-  const edge = new Map(), B = 1.0;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = y * W + x; if (!mask[i]) continue;
-    const d = Math.min(x + 0.5, W - x - 0.5, y + 0.5, H - y - 0.5) / S;
-    if (d < B) { const c = lab[i], e = edge.get(c); if (!e || d < e.d) edge.set(c, { d, x: fx(x), y: fy(y) }); }
-    else if (x > B * S + 2 && x < W - B * S - 2) x = Math.max(x, Math.floor(W - B * S - 2));
+  const edge = new Map(), Bm = P.edge, band = Math.ceil(Bm * S) + 2;
+  for (let y = 0; y < H; y++) {
+    const full = y < band || y >= H - band;
+    for (let x = 0; x < W; x++) {
+      if (!full && x === band) x = Math.max(band, W - band);
+      const i = y * W + x; if (!mask[i]) continue;
+      const d = Math.min(x + 0.5, W - x - 0.5, y + 0.5, H - y - 0.5) / S;
+      if (d < Bm) { const c = lab[i], e = edge.get(c); if (!e || d < e.d) edge.set(c, { d, x: fx(x), y: fy(y) }); }
+    }
   }
-  // furos: anel e ilhas com furo
-  const flashes = bottom.objs.filter((o) => o.t === 'flash' && o.pol !== 'C');
+  for (const e of edge.values()) finds.push({ sev: e.d < Bm / 2 ? 'bad' : 'warn', layer: name, x: e.x, y: e.y, msg: `Cobre a ${fmt(e.d)} mm da borda (mínimo ${fmt(Bm, 1)} mm). A fresa de recorte pode comer esse cobre.` });
+  // furos x pads desta camada
+  const flashes = g.objs.filter((o) => o.t === 'flash' && o.pol !== 'C');
   const grid = new Map(); const gk = (x, y) => Math.round(x * 2) + ',' + Math.round(y * 2);
   for (const f of flashes) { const k = gk(f.x, f.y); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(f); }
-  const holeComp = new Set(); const ringGroups = new Map(); let noCopper = [];
-  for (const h of drill.holes) {
+  const holeComp = new Set(), ringGroups = new Map(), noCopper = [];
+  for (const h of holes) {
     const hx = Math.floor(tx(h.x)), hy = Math.floor(ty(h.y)); const inside = hx >= 0 && hy >= 0 && hx < W && hy < H;
     if (inside && lab[hy * W + hx]) holeComp.add(lab[hy * W + hx]);
     let pad = null;
     for (const f of (grid.get(gk(h.x, h.y)) || [])) if (Math.hypot(f.x - h.x, f.y - h.y) < 0.05) { pad = f; break; }
     if (pad) {
-      const a = bottom.aps.get(pad.ap); if (!a) continue;
+      const a = g.aps.get(pad.ap); if (!a) continue;
       const dim = a.type === 'C' ? a.p[0] : a.type === 'P' ? a.p[0] * Math.cos(Math.PI / Math.max(3, a.p[1])) : Math.min(a.p[0], a.p[1]);
-      const ring = (dim - h.d) / 2;
+      const ring = (dim - h.de) / 2;
       if (ring <= 0.001) noCopper.push(h);
-      else if (ring < 0.3) { const k = h.d.toFixed(2) + '|' + dim.toFixed(2); if (!ringGroups.has(k)) ringGroups.set(k, { d: h.d, dim, ring, list: [] }); ringGroups.get(k).list.push(h); }
-    } else if (!(inside && mask[hy * W + hx])) noCopper.push(h);
+      else if (ring < P.ring) { const k = h.de.toFixed(2) + '|' + dim.toFixed(2); if (!ringGroups.has(k)) ringGroups.set(k, { de: h.de, d: h.d, dim, ring, list: [] }); ringGroups.get(k).list.push(h); }
+    } else if (!(inside && mask[hy * W + hx]) && name === 'bottom') noCopper.push(h);
   }
-  const floating = []; for (let c = 1; c <= nl; c++) if (!holeComp.has(c) && area[c] / (S * S) > 0.05) floating.push({ c, a: area[c] / (S * S), x: fx(seed[c] % W), y: fy((seed[c] / W) | 0) });
-
-  for (const g of gaps) finds.push({ sev: g.g < 0.3 ? 'bad' : 'warn', x: g.x, y: g.y,
-    msg: g.g < 0.3 ? `Folga de ${fmt(g.g)} mm entre cobres. A fresa provavelmente não isola aqui e vira curto.` : `Folga de ${fmt(g.g)} mm entre cobres. Passa com ferramenta de até ~0,3 mm; confira na prévia do CopperCAM.` });
-  for (const e of edge.values()) finds.push({ sev: e.d < 0.4 ? 'bad' : 'warn', x: e.x, y: e.y, msg: `Cobre a ${fmt(e.d)} mm da borda. A fresa de recorte pode comer esse cobre; deixe pelo menos 1 mm.` });
-  for (const f of floating) finds.push({ sev: 'warn', x: f.x, y: f.y, msg: `Cobre solto (${fmt(f.a, 1)} mm², sem nenhum furo). Ele não liga em nada; apague ou ligue ao plano.` });
-  for (const g of ringGroups.values()) finds.push({ sev: 'warn', x: g.list[0].x, y: g.list[0].y, msg: `${g.list.length} furo(s) de ${fmt(g.d)} mm em pad de ${fmt(g.dim)} mm: sobram só ${fmt(g.ring)} mm de cobre em volta. Se a broca desviar, some o anel.` });
-  if (noCopper.length) finds.push({ sev: 'warn', x: noCopper[0].x, y: noCopper[0].y, msg: `${noCopper.length} furo(s) sem cobre em volta (pad do tamanho do furo ou furo de fixação). Tudo bem se for de propósito, mas não dá para soldar neles.` });
-  for (const n of drill.notes) finds.push({ sev: n.sev, x: n.x, y: n.y, msg: n.msg });
-  return { finds, bb, S, W, H, mask, gaps, edge, floating };
-}
-
-function preview(an, drill) {
-  const { W, H, mask, S, bb } = an; const cv = $('cv'); cv.width = W; cv.height = H;
-  const ctx = cv.getContext('2d'); const img = ctx.createImageData(W, H); const d = img.data;
-  for (let i = 0; i < W * H; i++) { const c = mask[i] ? [201, 130, 79] : [13, 23, 18]; d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255; }
-  ctx.putImageData(img, 0, 0);
-  const tx = (x) => (x - bb.x0) * S, ty = (y) => (bb.y1 - y) * S;
-  ctx.fillStyle = '#0B0F0C';
-  for (const h of drill.holes) { ctx.beginPath(); ctx.arc(tx(h.x), ty(h.y), h.d * S / 2, 0, 2 * Math.PI); ctx.fill(); }
-  ctx.strokeStyle = '#F2D46B'; ctx.lineWidth = Math.max(2, 0.25 * S); ctx.strokeRect(1, 1, W - 2, H - 2);
-  const r = Math.max(10, 1.4 * S);
-  an.finds.forEach((f, i) => {
-    if (f.x === undefined) return;
-    const x = tx(f.x), y = ty(f.y), col = f.sev === 'bad' ? '#FF4D3D' : '#FFB23E';
-    ctx.lineWidth = Math.max(3, 0.18 * S); ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
-    ctx.fillStyle = col; ctx.font = `700 ${Math.round(r * 1.1)}px Archivo, Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText(String(i + 1), Math.min(Math.max(x, r), W - r), y - r - 2 > r ? y - r - 2 : y + r + r * 1.2);
-  });
-}
-
-/* ---------- fluxo principal ---------- */
-async function readInputs(fileList) {
-  const files = [];
-  for (const f of fileList) {
-    if (/\.zip$/i.test(f.name)) {
-      const z = await JSZip.loadAsync(f);
-      for (const name of Object.keys(z.files)) { const e = z.files[name]; if (!e.dir) files.push({ name: name.split('/').pop(), text: await e.async('string') }); }
-    } else files.push({ name: f.name, text: await f.text() });
-  }
-  return files;
-}
-
-async function run(files, sourceLabel, baseName) {
-  $('error').hidden = true; $('dl').disabled = true; lastZip = null;
-  try {
-    const pick = (re) => files.find((f) => re.test(f.name));
-    const fb = pick(/BottomLayer\.GBL$/i) || pick(/\.GBL$/i), fo = pick(/BoardOutline.*\.GKO$/i) || pick(/\.(GKO|GM1)$/i), ft = pick(/TopLayer\.GTL$/i) || pick(/\.GTL$/i);
-    const fds = files.filter((f) => /\.(DRL|XLN)$/i.test(f.name));
-    if (!fb) throw new Error('Não achei o cobre do lado Bottom (arquivo Gerber_BottomLayer.GBL). Exporte pelo EasyEDA Pro em Export → PCB Fabrication File (Gerber) e solte o .zip inteiro.');
-    if (!fds.length) throw new Error('Não achei a furação (.DRL) no que foi carregado.');
-    const bottom = processGerber(fb.text, 'Bottom');
-    const outline = fo ? processGerber(fo.text, 'Contorno') : null;
-    const top = ft ? processGerber(ft.text, 'Top') : null;
-    let holes = [], slots = [], dwarn = [];
-    for (const f of fds) { const r = parseDrill(f.text, f.name); holes.push(...r.holes); slots.push(...r.slots); dwarn.push(...r.warns); }
-    const drill = buildDrill(holes, slots);
-    const an = analyze(bottom, outline ? outline.objs : [], drill);
-    const warns = [...bottom.warns, ...(outline ? outline.warns : []), ...dwarn];
-    for (const w of warns) an.finds.push({ sev: /macro|incrementa|não são suportad/.test(w) ? 'bad' : 'warn', msg: w });
-    if (!outline) an.finds.push({ sev: 'warn', msg: 'Sem contorno da placa (.GKO). O tamanho e a checagem de borda usam o cobre como referência.' });
-    an.finds.sort((a, b) => ({ bad: 0, warn: 1, info: 2 }[a.sev] - { bad: 0, warn: 1, info: 2 }[b.sev]));
-    const jumpers = top ? countChains(top.objs.filter((o) => o.t === 'draw')) : 0;
-    if (jumpers) an.finds.push({ sev: 'info', msg: `${jumpers} ligação(ões) na camada Top. Numa placa de face simples cada uma vira um jumper de fio do lado dos componentes.` });
-    preview(an, drill);
-    render(an, drill, { sourceLabel, jumpers, dup: drill.dup, slots: drill.slots, fds: fds.map((f) => f.name) });
-    const base = baseName.replace(/\.zip$/i, '').replace(/[^\w.-]+/g, '_') || 'placa';
-    lastName = base;
-    const zip = new JSZip(); const dir = zip.folder(base + '_CopperCAM');
-    dir.file(base + '_Bottom.gbr', bottom.out);
-    if (outline) dir.file(base + '_Contorno.gbr', outline.out);
-    dir.file(base + '_Furos.drl', drill.out);
-    if (top && jumpers) dir.file(base + '_Top_jumpers_referencia.gbr', top.out);
-    dir.file(base + '_relatorio.txt', reportText(an, drill, { sourceLabel, jumpers, base }));
-    const png = await new Promise((res) => $('cv').toBlob(res, 'image/png'));
-    if (png) dir.file(base + '_previa.png', png);
-    lastZip = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-    window.__result = { an, drill, bottom, files: Object.keys(zip.files) };
-    $('results').hidden = false; $('empty').hidden = true;
-    $('dl').disabled = false; $('dlmsg').textContent = '.zip com cobre, contorno, furação, prévia e relatório';
-  } catch (e) {
-    console.error(e); $('error').textContent = e.message || String(e); $('error').hidden = false;
-    $('pill').className = 'pill bad'; $('pill').textContent = 'Não deu para converter';
-  }
+  for (const r of ringGroups.values()) finds.push({ sev: 'warn', layer: name, x: r.list[0].x, y: r.list[0].y, pts: r.list.map((h) => [h.x, h.y]),
+    msg: `${r.list.length} furo(s) de ${fmt(r.de)} mm${r.de !== r.d ? ` (broca para furo de ${fmt(r.d)} mm)` : ''} em pad de ${fmt(r.dim)} mm: sobram ${fmt(r.ring)} mm de cobre em volta (mínimo ${fmt(P.ring)} mm).` });
+  if (noCopper.length) finds.push({ sev: 'warn', layer: name, x: noCopper[0].x, y: noCopper[0].y, pts: noCopper.map((h) => [h.x, h.y]),
+    msg: `${noCopper.length} furo(s) sem cobre em volta (pad do tamanho do furo, ou furo de fixação). Tudo bem se for de propósito, mas não dá para soldar neles.` });
+  for (let c = 1; c <= nl; c++) if (!holeComp.has(c) && area[c] / (S * S) > 0.05)
+    finds.push({ sev: 'warn', layer: name, x: fx(seed[c] % W), y: fy((seed[c] / W) | 0), msg: `Cobre solto (${fmt(area[c] / (S * S), 1)} mm², sem nenhum furo). Ele não liga em nada; apague ou ligue ao plano.` });
+  return { mask, gaps, finds };
 }
 
 function countChains(segs) {
@@ -660,81 +652,316 @@ function countChains(segs) {
   return new Set(segs.map((_, i) => f(i))).size;
 }
 
+/* ---------- análise completa ---------- */
+function analyzeAll() {
+  const p = st.parsed; if (!p) return;
+  const P = params(); saveParams();
+  const finds = [];
+  // brocas efetivas
+  const map = new Map();
+  for (const d of p.drill.dias) {
+    let de = d;
+    if (P.drills.length) { const ok = P.drills.find((b) => b >= d - 0.05); de = ok !== undefined ? ok : P.drills[P.drills.length - 1]; }
+    map.set(d, de);
+  }
+  const holes = p.drill.holes.map((h) => ({ ...h, de: map.get(h.d) }));
+  for (const [d, de] of map) if (de < d - 0.05) finds.push({ sev: 'warn', x: holes.find((h) => h.d === d).x, y: holes.find((h) => h.d === d).y, dia: d,
+    msg: `Não há broca para os furos de ${fmt(d)} mm: a maior disponível é ${fmt(de)} mm, e a perna do componente pode não entrar.` });
+  const layers = [p.bottom, ...(P.dual && p.top ? [p.top] : [])];
+  const bb = bboxOf(p.outline ? p.outline.objs : []) || bboxOf(layers.flatMap((l) => l.objs));
+  const bw = bb.x1 - bb.x0, bh = bb.y1 - bb.y0;
+  const S = Math.min(25, Math.sqrt(8e6 / (bw * bh))), W = Math.ceil(bw * S), H = Math.ceil(bh * S);
+  const G = { bb, S, W, H };
+  const L = {};
+  L.bottom = analyzeLayer('bottom', p.bottom, G, holes, P); finds.push(...L.bottom.finds);
+  if (P.dual && p.top) { L.top = analyzeLayer('top', p.top, G, holes, P); finds.push(...L.top.finds); }
+  for (const n of p.drill.notes) finds.push({ ...n });
+  for (const w of p.warns) finds.push({ sev: /macro|incrementa|não são suportad/.test(w) ? 'bad' : 'warn', msg: w });
+  if (!p.outline) finds.push({ sev: 'warn', msg: 'Sem contorno da placa (.GKO). O tamanho e a checagem de borda usam o cobre como referência.' });
+  if (P.dual && !p.top) finds.push({ sev: 'bad', msg: 'Dupla face marcada, mas não veio o cobre Top (Gerber_TopLayer.GTL) no arquivo.' });
+  finds.sort((a, b) => SEVORD[a.sev] - SEVORD[b.sev]);
+  const jumpers = p.top ? countChains(p.top.objs.filter((o) => o.t === 'draw')) : 0;
+  if (!P.dual && jumpers) finds.push({ sev: 'info', msg: `${jumpers} ligação(ões) na camada Top. Na face simples cada uma vira um jumper de fio do lado dos componentes.` });
+  if (P.dual) finds.push({ sev: 'info', msg: 'Dupla face fresada não tem furo metalizado: cada via precisa de um fio ou rebite soldado dos dois lados, e pino de componente com trilha na Top precisa de solda em cima também.' });
+  if (!finds.some((f) => f.sev === 'bad' || f.sev === 'warn')) finds.unshift({ sev: 'ok', msg: `Nenhum problema com esses parâmetros: folgas acima de ${fmt(LIMtxt(P))} mm, nada a menos de ${fmt(P.edge, 1)} mm da borda e anéis de pelo menos ${fmt(P.ring)} mm.` });
+  st.res = { P, G, L, finds, holes, map, jumpers };
+  st.sel = -1; st.hiDia = null;
+  if (!P.dual || !p.top) st.view.layer = 'bottom';
+  buildBases(); renderUI(); fitView(); buildZip();
+}
+const LIMtxt = (P) => P.tool + 0.15;
+
+/* ---------- imagens base das camadas ---------- */
+function buildBases() {
+  const { G, L, holes } = st.res; const { W, H, S, bb } = G;
+  st.bases = {};
+  for (const name of Object.keys(L)) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+    const img = ctx.createImageData(W, H), d = img.data, m = L[name].mask;
+    const cu = name === 'top' ? [214, 164, 92] : [201, 130, 79];
+    for (let i = 0; i < W * H; i++) { const k = i * 4; if (m[i]) { d[k] = cu[0]; d[k + 1] = cu[1]; d[k + 2] = cu[2]; } else { d[k] = 13; d[k + 1] = 23; d[k + 2] = 18; } d[k + 3] = 255; }
+    ctx.putImageData(img, 0, 0);
+    ctx.fillStyle = '#070A08';
+    for (const h of holes) { ctx.beginPath(); ctx.arc((h.x - bb.x0) * S, (bb.y1 - h.y) * S, h.de * S / 2, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.strokeStyle = '#F2D46B'; ctx.lineWidth = Math.max(2, 0.25 * S); ctx.strokeRect(1, 1, W - 2, H - 2);
+    st.bases[name] = c;
+  }
+}
+
+/* ---------- visualização com zoom e pan ---------- */
+const cv = $('cv'), stage = $('stage');
+function stageSize() {
+  const { W, H } = st.res.G; const w = stage.clientWidth || 600;
+  const h = Math.min(Math.round(w * H / W), Math.round(window.innerHeight * 0.72), 900);
+  stage.style.height = Math.max(240, h) + 'px';
+  const dpr = window.devicePixelRatio || 1; cv.width = Math.round(w * dpr); cv.height = Math.round(Math.max(240, h) * dpr);
+  return { w, h: Math.max(240, h), dpr };
+}
+function fitView() {
+  if (!st.res) return; const { w, h } = stageSize(); const { W, H } = st.res.G;
+  const z = Math.min(w / W, h / H) * 0.97; st.view.z = z; st.view.ox = (W - w / z) / 2; st.view.oy = (H - h / z) / 2; draw();
+}
+function zoomAt(f, sx, sy) {
+  const v = st.view, { W, H } = st.res.G, w = stage.clientWidth, h = stage.clientHeight;
+  const zmin = Math.min(w / W, h / H) * 0.5, zmax = 40 / st.res.G.S * 25;
+  const nz = Math.min(zmax, Math.max(zmin, v.z * f));
+  const bx = v.ox + sx / v.z, by = v.oy + sy / v.z; v.z = nz; v.ox = bx - sx / nz; v.oy = by - sy / nz; draw();
+}
+function centerOn(xmm, ymm, windowMm) {
+  const { S, bb } = st.res.G, w = stage.clientWidth, h = stage.clientHeight;
+  if (windowMm) st.view.z = Math.min(w, h) / (windowMm * S);
+  const bx = (xmm - bb.x0) * S, by = (bb.y1 - ymm) * S; st.view.ox = bx - w / 2 / st.view.z; st.view.oy = by - h / 2 / st.view.z; draw();
+}
+function fitPoints(pts) {
+  const { S, bb } = st.res.G, w = stage.clientWidth, h = stage.clientHeight;
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const x0 = Math.min(...xs) - 4, x1 = Math.max(...xs) + 4, y0 = Math.min(...ys) - 4, y1 = Math.max(...ys) + 4;
+  st.view.z = Math.min(w / ((x1 - x0) * S), h / ((y1 - y0) * S)); centerOn((x0 + x1) / 2, (y0 + y1) / 2);
+}
+function markerPos(f) { const { S, bb } = st.res.G, v = st.view; return [((f.x - bb.x0) * S - v.ox) * v.z, ((bb.y1 - f.y) * S - v.oy) * v.z]; }
+function visibleFind(f) { return f.x !== undefined && (!f.layer || f.layer === st.view.layer); }
+function draw() {
+  if (!st.res) return; const ctx = cv.getContext('2d'); const dpr = cv.width / (stage.clientWidth || 1); const v = st.view, { W, H, S, bb } = st.res.G;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0D1712'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = v.z < 1;
+  ctx.drawImage(st.bases[v.layer], -v.ox * v.z, -v.oy * v.z, W * v.z, H * v.z);
+  // furos destacados
+  if (st.hiDia !== null) {
+    ctx.strokeStyle = '#4FC3F7'; ctx.lineWidth = 2.5;
+    for (const h of st.res.holes) if (h.d === st.hiDia) { const [x, y] = markerPos(h); ctx.beginPath(); ctx.arc(x, y, Math.max(7, h.de * S * v.z / 2 + 4), 0, 2 * Math.PI); ctx.stroke(); }
+  }
+  // pontos agrupados do aviso selecionado
+  const sel = st.res.finds[st.sel];
+  if (sel && sel.pts && visibleFind(sel)) { ctx.strokeStyle = '#4FC3F7'; ctx.lineWidth = 2; for (const [x0, y0] of sel.pts) { const [x, y] = markerPos({ x: x0, y: y0 }); ctx.beginPath(); ctx.arc(x, y, 9, 0, 2 * Math.PI); ctx.stroke(); } }
+  // marcadores
+  st.res.finds.forEach((f, i) => {
+    if (!visibleFind(f)) return; const [x, y] = markerPos(f); const on = i === st.sel;
+    const col = f.sev === 'bad' ? '#FF4D3D' : f.sev === 'warn' ? '#FFB23E' : '#9FB3A7', r = on ? 14 : 11;
+    ctx.lineWidth = on ? 3.5 : 2.5; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+    if (on) { ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, 2 * Math.PI); ctx.stroke(); }
+    ctx.font = '700 13px Archivo, Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ty = y - r - 10; ctx.fillStyle = 'rgba(7,10,8,.85)'; ctx.beginPath(); ctx.arc(x, ty, 9, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = col; ctx.fillText(String(i + 1), x, ty + 0.5);
+  });
+}
+// interação
+const ptrs = new Map(); let drag = null, pinch = null;
+stage.addEventListener('pointerdown', (e) => {
+  if (!st.res) return; stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (ptrs.size === 1) drag = { x: e.offsetX, y: e.offsetY, ox: st.view.ox, oy: st.view.oy, moved: false };
+  else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: st.view.z }; drag = null; }
+});
+stage.addEventListener('pointermove', (e) => {
+  if (!st.res) return;
+  const { S, bb } = st.res.G, v = st.view; const xm = bb.x0 + (v.ox + e.offsetX / v.z) / S, ym = bb.y1 - (v.oy + e.offsetY / v.z) / S;
+  $('readout').textContent = `X ${fmt(xm, 1)}  Y ${fmt(ym, 1)} mm`;
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); zoomAt((pinch.z * d / pinch.d) / v.z, (a.x + b.x) / 2, (a.y + b.y) / 2); return; }
+  if (drag) { const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) { drag.moved = true; stage.classList.add('drag'); }
+    if (drag.moved) { v.ox = drag.ox - dx / v.z; v.oy = drag.oy - dy / v.z; draw(); } }
+});
+const endPtr = (e) => {
+  if (drag && !drag.moved && ptrs.size === 1) {
+    let best = -1, bd = 18; st.res.finds.forEach((f, i) => { if (!visibleFind(f)) return; const [x, y] = markerPos(f); const d = Math.min(Math.hypot(x - e.offsetX, y - e.offsetY), Math.hypot(x - e.offsetX, y - 21 - e.offsetY)); if (d < bd) { bd = d; best = i; } });
+    if (best >= 0) select(best, false);
+  }
+  ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) { drag = null; stage.classList.remove('drag'); }
+};
+stage.addEventListener('pointerup', endPtr); stage.addEventListener('pointercancel', endPtr);
+stage.addEventListener('pointerleave', () => { $('readout').textContent = 'X –  Y –'; });
+stage.addEventListener('wheel', (e) => { if (!st.res) return; e.preventDefault(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.offsetX, e.offsetY); }, { passive: false });
+stage.addEventListener('dblclick', (e) => { if (st.res) zoomAt(2, e.offsetX, e.offsetY); });
+$('z-in').addEventListener('click', () => zoomAt(1.5, stage.clientWidth / 2, stage.clientHeight / 2));
+$('z-out').addEventListener('click', () => zoomAt(1 / 1.5, stage.clientWidth / 2, stage.clientHeight / 2));
+$('z-fit').addEventListener('click', () => { st.sel = -1; st.hiDia = null; markList(); markDrills(); fitView(); });
+function setLayer(l) { if (!st.bases || !st.bases[l]) return; st.view.layer = l; $('v-bottom').setAttribute('aria-pressed', l === 'bottom'); $('v-top').setAttribute('aria-pressed', l === 'top'); draw(); }
+$('v-bottom').addEventListener('click', () => setLayer('bottom'));
+$('v-top').addEventListener('click', () => setLayer('top'));
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (st.res) { const c = { x: st.view.ox, y: st.view.oy, z: st.view.z }; stageSize(); st.view.ox = c.x; st.view.oy = c.y; st.view.z = c.z; draw(); } }, 120); });
+
+function select(i, scroll = true) {
+  const f = st.res.finds[i]; st.sel = i; st.hiDia = null; markDrills();
+  if (f.layer && f.layer !== st.view.layer) setLayer(f.layer);
+  if (f.x !== undefined) { if (f.pts && f.pts.length > 1) fitPoints(f.pts); else centerOn(f.x, f.y, 9); } else draw();
+  markList(scroll);
+  if (scroll && window.innerWidth < 960) $('pv').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function markList(scroll) {
+  [...$('finds').children].forEach((li, i) => li.classList.toggle('on', i === st.sel));
+  if (!scroll && st.sel >= 0) { const li = $('finds').children[st.sel]; if (li) li.scrollIntoView({ block: 'nearest' }); }
+}
+function markDrills() { [...$('drills').tBodies[0].rows].forEach((tr) => tr.classList.toggle('on', +tr.dataset.d === st.hiDia)); }
+function showDia(d) {
+  if (st.hiDia === d) { st.hiDia = null; markDrills(); draw(); return; }
+  st.hiDia = d; st.sel = -1; markList(); markDrills();
+  const pts = st.res.holes.filter((h) => h.d === d).map((h) => [h.x, h.y]); fitPoints(pts);
+  if (window.innerWidth < 960) $('pv').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------- interface ---------- */
 function status(finds) {
   if (finds.some((f) => f.sev === 'bad')) return ['bad', 'Corrija antes de fresar'];
   if (finds.some((f) => f.sev === 'warn')) return ['warn', 'Pronto, com avisos'];
   return ['ok', 'Pronto para fresar'];
 }
-
-function render(an, drill, meta) {
-  const [cls, txt] = status(an.finds);
-  $('pill').className = 'pill ' + cls; $('pill').textContent = txt;
-  $('source').textContent = meta.sourceLabel;
-  const minGap = an.gaps.length ? fmt(an.gaps[0].g) + ' mm' : '≥ 0,45 mm';
-  const items = [['Placa', `${fmt(an.bb.x1 - an.bb.x0, 1)} × ${fmt(an.bb.y1 - an.bb.y0, 1)} mm`], ['Furos', String(drill.holes.length)], ['Menor folga', minGap], ['Jumpers', String(meta.jumpers)]];
+function renderUI() {
+  const { P, G, L, finds, holes, map, jumpers } = st.res, p = st.parsed, dual = P.dual && !!p.top;
+  $('results').hidden = false; $('empty').hidden = true;
+  const [cls, txt] = status(finds); $('pill').className = 'pill ' + cls; $('pill').textContent = txt;
+  $('source').textContent = st.source;
+  const allGaps = [...L.bottom.gaps, ...(L.top ? L.top.gaps : [])].sort((a, b) => a.g - b.g);
+  const items = [['Placa', `${fmt(G.bb.x1 - G.bb.x0, 1)} × ${fmt(G.bb.y1 - G.bb.y0, 1)} mm`], ['Tipo', dual ? 'Dupla face' : 'Face simples'], ['Furos', String(holes.length)],
+    ['Menor folga', allGaps.length ? fmt(allGaps[0].g) + ' mm' : '≥ ' + fmt(LIMtxt(P)) + ' mm'], [dual ? 'Vias' : 'Jumpers', dual ? String(p.drill.holes.filter((h) => p.viaKeys.has(Math.round(h.x * 100) + ',' + Math.round(h.y * 100))).length) : String(jumpers)]];
   $('stats').innerHTML = ''; for (const [k, v] of items) { const d = document.createElement('div'); const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; d.append(dt, dd); $('stats').append(d); }
+  $('laysel').hidden = !dual; setLayer(st.view.layer);
   const ol = $('finds'); ol.innerHTML = '';
-  if (!an.finds.length) an.finds.push({ sev: 'ok', msg: 'Nenhum problema encontrado: folgas acima de 0,45 mm, nada a menos de 1 mm da borda e todos os furos com cobre em volta.' });
-  an.finds.forEach((f, i) => {
+  finds.forEach((f, i) => {
     const li = document.createElement('li'); li.className = f.sev;
+    const el = document.createElement(f.x !== undefined ? 'button' : 'div'); el.className = 'find'; if (f.x !== undefined) { el.type = 'button'; el.addEventListener('click', () => select(i)); }
     const n = document.createElement('span'); n.className = 'n'; n.textContent = f.sev === 'ok' ? '✓' : String(i + 1);
-    const box = document.createElement('div'); const p = document.createElement('p'); p.textContent = f.msg; box.append(p);
-    if (f.x !== undefined) { const w = document.createElement('span'); w.className = 'where'; w.textContent = 'em ' + at(f.x, f.y) + ' mm'; box.append(w); }
-    li.append(n, box); ol.append(li);
+    const box = document.createElement('div'); const pp = document.createElement('p'); pp.textContent = f.msg; box.append(pp);
+    if (f.x !== undefined) { const w = document.createElement('span'); w.className = 'where'; w.textContent = 'em ' + at(f.x, f.y) + ' mm'; box.append(w);
+      if (dual && f.layer) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = f.layer === 'top' ? 'Top' : 'Bottom'; box.append(t); } }
+    el.append(n, box); li.append(el); ol.append(li);
   });
-  const tb = $('drills').querySelector('tbody'); tb.innerHTML = '';
-  for (const d of drill.dias) { const tr = document.createElement('tr'); const n = drill.holes.filter((h) => h.d === d).length; tr.innerHTML = `<td class="num">${fmt(d)} mm</td><td class="num">${n}</td>`; tb.append(tr); }
+  const usesMap = P.drills.length > 0;
+  $('drillhead').innerHTML = usesMap ? '<th>Furo</th><th>Broca</th><th>Qtd</th>' : '<th>Broca</th><th>Qtd</th>';
+  const tb = $('drills').tBodies[0]; tb.innerHTML = '';
+  for (const d of p.drill.dias) {
+    const tr = document.createElement('tr'); tr.className = 'pick'; tr.dataset.d = d; tr.tabIndex = 0;
+    const n = holes.filter((h) => h.d === d).length; const de = map.get(d);
+    tr.innerHTML = usesMap ? `<td class="num">${fmt(d)} mm</td><td class="num">${fmt(de)} mm</td><td class="num">${n}</td>` : `<td class="num">${fmt(d)} mm</td><td class="num">${n}</td>`;
+    tr.addEventListener('click', () => showDia(d)); tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showDia(d); } });
+    tb.append(tr);
+  }
   const done = [
-    'Cobre Bottom e contorno regravados em polegada, formato 2.4, sem comentários nem atributos X2.',
+    `Cobre ${dual ? 'Top e Bottom' : 'Bottom'} e contorno regravados em polegada, formato 2.4, sem comentários nem atributos X2.`,
     'Aberturas renumeradas a partir de D20. D10 e D11 ficam reservados: o CopperCAM lia errado os pads que caíam no D11.',
-    `Furação junta (${meta.fds.join(', ')}), com ${meta.dup} furo(s) repetido(s) removido(s) e ferramentas de mesmo diâmetro unificadas.`,
-    meta.slots ? `${meta.slots} furo(s) oblongo(s) trocado(s) por furo redondo.` : 'Nenhum furo oblongo encontrado.',
+    `Furação junta (${p.fds.join(', ')}), com ${p.drill.dup} furo(s) repetido(s) removido(s) e ferramentas de mesmo diâmetro unificadas.`,
+    p.drill.slots ? `${p.drill.slots} furo(s) oblongo(s) trocado(s) por furo redondo.` : 'Nenhum furo oblongo encontrado.',
+    'Os diâmetros no arquivo de furação são os do projeto. A lista de brocas só muda a checagem.',
     'Nada é espelhado: o CopperCAM faz isso na hora de fresar.'];
   $('done').innerHTML = ''; for (const t of done) { const li = document.createElement('li'); li.textContent = t; $('done').append(li); }
+  const steps = dual ? [
+    'Abra o <span class="mono">_Bottom.gbr</span> como circuito novo (camada 1) e o <span class="mono">_Top.gbr</span> como camada adicional (camada 2).',
+    'Adicione o <span class="mono">_Contorno.gbr</span> e a furação <span class="mono">_Furos.drl</span>.',
+    'Use furos de alinhamento para virar a placa entre um lado e outro.',
+    'Se aparecer o aviso de furo maior que o pad, responda <strong>Não</strong>.']
+    : ['Abra o <span class="mono">_Bottom.gbr</span> como circuito novo.', 'Adicione o <span class="mono">_Contorno.gbr</span> e a furação <span class="mono">_Furos.drl</span>. Não carregue o arquivo de vias do EasyEDA: os furos dele já estão juntos.',
+      'Confira se a placa abriu com o tamanho mostrado acima.', 'Se aparecer o aviso de furo maior que o pad, responda <strong>Não</strong>.'];
+  $('steps').innerHTML = steps.map((s) => `<li>${s}</li>`).join('');
 }
 
-function reportText(an, drill, meta) {
-  const L = [];
-  L.push(`Gerber para CopperCAM — ${meta.base}`, `Origem: ${meta.sourceLabel}`, '');
-  L.push(`Situação: ${status(an.finds)[1]}`);
-  L.push(`Placa: ${fmt(an.bb.x1 - an.bb.x0, 1)} x ${fmt(an.bb.y1 - an.bb.y0, 1)} mm | Furos: ${drill.holes.length} | Menor folga: ${an.gaps.length ? fmt(an.gaps[0].g) + ' mm' : '>= 0,45 mm'} | Jumpers na Top: ${meta.jumpers}`, '');
-  L.push('O que conferir (coordenadas em mm, a partir do canto inferior esquerdo):');
-  an.finds.forEach((f, i) => L.push(`${i + 1}. [${{ bad: 'CORRIGIR', warn: 'ATENÇÃO', info: 'INFO', ok: 'OK' }[f.sev]}] ${f.msg}${f.x !== undefined ? ' — em ' + at(f.x, f.y) : ''}`));
-  L.push('', 'Brocas:'); for (const d of drill.dias) L.push(`  ${fmt(d)} mm: ${drill.holes.filter((h) => h.d === d).length} furos`);
-  L.push('', 'No CopperCAM: abra o _Bottom.gbr, depois o _Contorno.gbr e o _Furos.drl. Se ele perguntar se quer reduzir furos maiores que os pads, responda Não.');
-  return L.join('\r\n') + '\r\n';
+/* ---------- pacote ---------- */
+function staticPreview(layer) {
+  const { W, H, S, bb } = st.res.G; const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d');
+  ctx.drawImage(st.bases[layer], 0, 0); const r = Math.max(10, 1.4 * S);
+  st.res.finds.forEach((f, i) => { if (f.x === undefined || (f.layer && f.layer !== layer)) return;
+    const x = (f.x - bb.x0) * S, y = (bb.y1 - f.y) * S, col = f.sev === 'bad' ? '#FF4D3D' : '#FFB23E';
+    ctx.lineWidth = Math.max(3, 0.18 * S); ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+    ctx.fillStyle = col; ctx.font = `700 ${Math.round(r * 1.1)}px Archivo, Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(String(i + 1), Math.min(Math.max(x, r), W - r), y - r - 2 > r ? y - r - 2 : y + r + r * 1.2); });
+  return new Promise((res) => c.toBlob(res, 'image/png'));
+}
+function reportText() {
+  const { P, G, L, finds, holes, map, jumpers } = st.res, p = st.parsed, dual = P.dual && !!p.top; const R = [];
+  R.push(`Gerber para CopperCAM — ${st.base}`, `Origem: ${st.source}`, '');
+  R.push(`Parâmetros: ${dual ? 'dupla face' : 'face simples'} | corte da ferramenta ${fmt(P.tool)} mm | borda mínima ${fmt(P.edge, 1)} mm | anel mínimo ${fmt(P.ring)} mm | brocas ${P.drills.length ? P.drills.map((b) => fmt(b)).join(', ') + ' mm' : 'as do projeto'}`);
+  const allGaps = [...L.bottom.gaps, ...(L.top ? L.top.gaps : [])].sort((a, b) => a.g - b.g);
+  R.push(`Situação: ${status(finds)[1]}`, `Placa: ${fmt(G.bb.x1 - G.bb.x0, 1)} x ${fmt(G.bb.y1 - G.bb.y0, 1)} mm | Furos: ${holes.length} | Menor folga: ${allGaps.length ? fmt(allGaps[0].g) + ' mm' : '>= ' + fmt(LIMtxt(P)) + ' mm'}${dual ? '' : ' | Jumpers na Top: ' + jumpers}`, '');
+  R.push('O que conferir (coordenadas em mm, a partir do canto inferior esquerdo):');
+  finds.forEach((f, i) => R.push(`${i + 1}. [${{ bad: 'CORRIGIR', warn: 'ATENÇÃO', info: 'INFO', ok: 'OK' }[f.sev]}]${f.layer && dual ? ' [' + (f.layer === 'top' ? 'Top' : 'Bottom') + ']' : ''} ${f.msg}${f.x !== undefined ? ' — em ' + at(f.x, f.y) : ''}`));
+  R.push('', 'Furação:'); for (const d of p.drill.dias) R.push(`  ${fmt(d)} mm${P.drills.length ? ' -> broca ' + fmt(map.get(d)) + ' mm' : ''}: ${holes.filter((h) => h.d === d).length} furos`);
+  return R.join('\r\n') + '\r\n';
+}
+async function buildZip() {
+  $('dl').disabled = true; st.zip = null;
+  const p = st.parsed, P = st.res.P, dual = P.dual && !!p.top, b = st.base;
+  const zip = new JSZip(); const dir = zip.folder(b + '_CopperCAM');
+  dir.file(b + '_Bottom.gbr', p.bottom.out);
+  if (p.top) dir.file(b + (dual ? '_Top.gbr' : '_Top_jumpers_referencia.gbr'), p.top.out);
+  if (p.outline) dir.file(b + '_Contorno.gbr', p.outline.out);
+  dir.file(b + '_Furos.drl', p.drill.out);
+  dir.file(b + '_relatorio.txt', reportText());
+  const pb = await staticPreview('bottom'); if (pb) dir.file(b + '_previa_bottom.png', pb);
+  if (dual) { const pt = await staticPreview('top'); if (pt) dir.file(b + '_previa_top.png', pt); }
+  st.zip = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  window.__result = { res: st.res, files: Object.keys(zip.files) };
+  $('dl').disabled = false; $('dlmsg').textContent = `.zip com cobre${dual ? ' Top e Bottom' : ''}, contorno, furação, prévia e relatório`;
 }
 
-/* ---------- eventos ---------- */
+/* ---------- entrada ---------- */
+async function readInputs(list) {
+  const files = [];
+  for (const f of list) {
+    if (/\.zip$/i.test(f.name)) { const z = await JSZip.loadAsync(f); for (const name of Object.keys(z.files)) { const e = z.files[name]; if (!e.dir) files.push({ name: name.split('/').pop(), text: await e.async('string') }); } }
+    else files.push({ name: f.name, text: await f.text() });
+  }
+  return files;
+}
+function parseAll(files) {
+  const pick = (re) => files.find((f) => re.test(f.name));
+  const fb = pick(/BottomLayer\.GBL$/i) || pick(/\.GBL$/i), fo = pick(/BoardOutline.*\.GKO$/i) || pick(/\.(GKO|GM1)$/i), ft = pick(/TopLayer\.GTL$/i) || pick(/\.GTL$/i);
+  const fds = files.filter((f) => /\.(DRL|XLN)$/i.test(f.name));
+  if (!fb) throw new Error('Não achei o cobre do lado Bottom (arquivo Gerber_BottomLayer.GBL). Exporte pelo EasyEDA Pro em Export → PCB Fabrication File (Gerber) e solte o .zip inteiro.');
+  if (!fds.length) throw new Error('Não achei a furação (.DRL) no que foi carregado.');
+  const bottom = processGerber(fb.text, 'Bottom'), outline = fo ? processGerber(fo.text, 'Contorno') : null, top = ft ? processGerber(ft.text, 'Top') : null;
+  let holes = [], slots = [], warns = [...bottom.warns, ...(outline ? outline.warns : []), ...(top ? top.warns : [])];
+  const viaKeys = new Set();
+  for (const f of fds) { const r = parseDrill(f.text, f.name); holes.push(...r.holes); slots.push(...r.slots); warns.push(...r.warns);
+    if (/via/i.test(f.name)) for (const h of r.holes) viaKeys.add(Math.round(h.x * 100) + ',' + Math.round(h.y * 100)); }
+  return { bottom, outline, top, drill: buildDrill(holes, slots), warns, fds: fds.map((f) => f.name), viaKeys };
+}
+async function handle(list) {
+  if (!list || !list.length) return;
+  const arr = [...list]; const zn = (arr.find((f) => /\.zip$/i.test(f.name)) || arr[0]).name;
+  $('loaded').textContent = 'Carregado: ' + arr.map((f) => f.name).join(', '); $('error').hidden = true;
+  try {
+    const files = await readInputs(arr); st.parsed = parseAll(files);
+    st.source = arr.map((f) => f.name).join(', '); st.base = zn.replace(/\.zip$/i, '').replace(/\.[^.]+$/, '').replace(/[^\w.-]+/g, '_') || 'placa';
+    analyzeAll();
+  } catch (e) { console.error(e); $('error').textContent = e.message || String(e); $('error').hidden = false; }
+}
 const drop = $('drop');
 ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', (e) => handle(e.dataTransfer.files));
 $('file').addEventListener('change', (e) => { handle(e.target.files); e.target.value = ''; });
-async function handle(list) {
-  if (!list || !list.length) return;
-  const arr = [...list]; const zipName = (arr.find((f) => /\.zip$/i.test(f.name)) || arr[0]).name;
-  $('loaded').textContent = 'Carregado: ' + arr.map((f) => f.name).join(', ');
-  $('pill').className = 'pill'; $('pill').textContent = 'Analisando…';
-  try { const files = await readInputs(arr); await run(files, arr.map((f) => f.name).join(', '), zipName); }
-  catch (e) { $('error').textContent = 'Não consegui abrir o arquivo: ' + (e.message || e); $('error').hidden = false; }
-}
+let pt; const reparam = () => { clearTimeout(pt); pt = setTimeout(() => { saveParams(); if (st.parsed) { try { analyzeAll(); } catch (e) { console.error(e); } } }, 350); };
+for (const id of ['p-tool', 'p-edge', 'p-ring', 'p-drills']) $(id).addEventListener('input', reparam);
+for (const id of ['ly-single', 'ly-dual']) $(id).addEventListener('change', reparam);
 $('dl').addEventListener('click', async () => {
-  if (!lastZip) return;
-  const name = lastName + '_CopperCAM.zip';
+  if (!st.zip) return; const name = st.base + '_CopperCAM.zip';
   try {
     if (window.claude && window.claude.use) {
       const dl = await window.claude.use('downloads');
       if (!dl) { $('dlmsg').textContent = 'O download não está disponível nesta visualização.'; return; }
-      await dl.save({ filename: name, data: lastZip }); $('dlmsg').textContent = 'Pacote salvo: ' + name;
-    } else {
-      const a = document.createElement('a'); a.href = URL.createObjectURL(lastZip); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    }
-  } catch (e) {
-    const c = e && e.code;
-    $('dlmsg').textContent = c === 'declined' ? 'Download cancelado.' : c === 'rate_limited' ? 'Já tem uma confirmação aberta; responda ela primeiro.' : 'Não foi possível salvar o arquivo aqui.';
-  }
+      await dl.save({ filename: name, data: st.zip }); $('dlmsg').textContent = 'Pacote salvo: ' + name;
+    } else { const a = document.createElement('a'); a.href = URL.createObjectURL(st.zip); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+  } catch (e) { const c = e && e.code; $('dlmsg').textContent = c === 'declined' ? 'Download cancelado.' : c === 'rate_limited' ? 'Já tem uma confirmação aberta; responda ela primeiro.' : 'Não foi possível salvar o arquivo aqui.'; }
 });
+loadParams();
 </script>
 
 </body>
