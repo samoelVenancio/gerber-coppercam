@@ -8,13 +8,26 @@ Tudo roda no navegador: os arquivos da placa não são enviados para lugar nenhu
 
 1. No EasyEDA Pro: **Export → PCB Fabrication File (Gerber)**.
 2. Abra a página e escolha o tipo de placa (**face simples** ou **dupla face**) e os parâmetros da sua ferramenta.
-3. Solte o `.zip` exportado na caixa (ou clique nela para escolher o arquivo).
+3. Solte o `.zip` exportado na caixa (ou clique nela para escolher o arquivo). Use o `.zip` inteiro: ele traz a netlist usada na checagem de redes.
 4. Leia o veredito e a lista "O que conferir":
    - clique num aviso para a prévia ir até o ponto;
    - clique num diâmetro da tabela de furação para ver onde ficam esses furos;
    - roda do mouse ou dois dedos dão zoom, e arrastar move a prévia.
 5. Clique em **Baixar pacote para o CopperCAM**.
 6. No CopperCAM, abra o `_Bottom.gbr` (e o `_Top.gbr`, se for dupla face), depois o `_Contorno.gbr` e o `_Furos.drl`. Se ele perguntar se quer reduzir furos maiores que os pads, responda **Não**.
+
+## Nomes nos avisos e checagem de redes
+
+O EasyEDA Pro já põe no `.zip` do Gerber um arquivo chamado `FlyingProbeTesting.json`, com cada pino da placa, a posição e a rede. Quando ele está no `.zip`, a página usa esse arquivo para duas coisas:
+
+- **Nomes nos avisos.** Folga, borda, anel de furo e cobre solto dizem quais pinos estão ali, por exemplo: "Folga de 0,16 mm entre C6 pino 2 (GND) e C6 pino 1 (rede sem nome $2N8)". Rede que começa com `$` é uma rede sem nome no esquemático.
+- **Curto e rede aberta.** A página segue o cobre de verdade (ilhas do Bottom, jumpers da Top na face simples, furos ligando Top e Bottom na dupla face) e compara com a netlist:
+  - **curto**: cobre ligando pinos de redes diferentes. O aviso mostra as redes e um pino de cada, e o clique leva ao ponto onde elas se encontram;
+  - **rede aberta**: pinos da mesma rede em pedaços de cobre separados. O aviso lista um pino de cada pedaço, e o clique destaca os pinos da rede, cada pedaço numa cor.
+
+  Os dois são erro grave ("Corrija antes de fresar"). O relatório `.txt` do pacote tem uma seção "Conectividade" com o resumo.
+
+Sem o `FlyingProbeTesting.json` (por exemplo, se você soltar só os `.GBL`, `.GKO` e `.DRL`), a página funciona igual, mas sem os nomes e sem a checagem de curto e de rede aberta.
 
 ## Parâmetros
 

@@ -91,7 +91,7 @@ ol.finds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;g
 ol.finds li{border-radius:8px;border:1px solid var(--line);border-left:4px solid var(--line)}
 ol.finds li.bad{border-left-color:var(--bad)} ol.finds li.warn{border-left-color:var(--warn)} ol.finds li.ok{border-left-color:var(--ok)}
 ol.finds li.on{background:var(--sel-soft);border-color:var(--sel)}
-.find{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 12px;width:100%;text-align:left;border:0;background:transparent;border-radius:8px}
+.find{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 12px;width:100%;box-sizing:border-box;text-align:left;border:0;background:transparent;border-radius:8px}
 button.find:hover{background:var(--bg)}
 .n{font-family:var(--mono);font-size:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--muted)}
 li.bad .n{background:var(--bad-soft);color:var(--bad)} li.warn .n{background:var(--warn-soft);color:var(--warn)}
@@ -119,12 +119,12 @@ footer{color:var(--muted);font-size:12px}
     <div>
       <div class="eyebrow">EasyEDA Pro → CopperCAM</div>
       <h1>Gerber para CopperCAM</h1>
-      <p class="lede">Converte o Gerber do EasyEDA Pro para o formato que o CopperCAM lê sem erro e confere a placa do jeito que a fresa vai cortar: folgas, distância da borda, anel de cobre dos furos e cobre solto.</p>
+      <p class="lede">Converte o Gerber do EasyEDA Pro para o formato que o CopperCAM lê sem erro e confere a placa do jeito que a fresa vai cortar: folgas, distância da borda, anel de cobre dos furos, cobre solto, curtos e redes abertas.</p>
     </div>
     <label class="drop" id="drop" for="file">
-      <input type="file" id="file" accept=".zip,.gbl,.gko,.gtl,.drl,.GBL,.GKO,.GTL,.DRL" multiple aria-label="Escolher o .zip do Gerber">
+      <input type="file" id="file" accept=".zip,.gbl,.gko,.gtl,.drl,.json,.GBL,.GKO,.GTL,.DRL" multiple aria-label="Escolher o .zip do Gerber">
       <strong>Solte aqui o .zip do Gerber</strong>
-      <p>Ou clique aqui para escolher. No EasyEDA Pro: <span class="mono">Export → PCB Fabrication File (Gerber)</span>. Pode ser o .zip inteiro ou só os arquivos <span class="mono">.GBL</span>, <span class="mono">.GTL</span>, <span class="mono">.GKO</span> e <span class="mono">.DRL</span>.</p>
+      <p>Ou clique aqui para escolher. No EasyEDA Pro: <span class="mono">Export → PCB Fabrication File (Gerber)</span>. Pode ser o .zip inteiro ou só os arquivos <span class="mono">.GBL</span>, <span class="mono">.GTL</span>, <span class="mono">.GKO</span> e <span class="mono">.DRL</span>, mais o <span class="mono">FlyingProbeTesting.json</span> para conferir as redes.</p>
       <span class="mono" id="loaded">Nenhum arquivo carregado</span>
     </label>
   </header>
@@ -163,6 +163,7 @@ footer{color:var(--muted);font-size:12px}
         <li>Folga entre cobres contra a largura de corte da sua ferramenta.</li>
         <li>Cobre perto da borda, cobre solto e anel de cobre em volta dos furos.</li>
         <li>Na face simples, quantas ligações na Top viram jumper de fio.</li>
+        <li>Curto entre redes e rede aberta, pela netlist que o EasyEDA Pro põe no .zip. Com ela, os avisos dizem o componente e o pino.</li>
       </ul>
     </div>
     <div class="panel">
@@ -210,7 +211,8 @@ footer{color:var(--muted);font-size:12px}
           <span><i style="background:#F2D46B"></i>contorno</span>
           <span><i style="background:#FF4D3D"></i>corrigir</span>
           <span><i style="background:#FFB23E"></i>atenção</span>
-          <span><i style="background:#4FC3F7"></i>furos destacados</span>
+          <span><i style="background:#4FC3F7"></i>furos e pinos destacados</span>
+          <span><i style="background:#FF7AD9"></i>outro pedaço ou outra rede</span>
         </div>
       </div>
       <div class="panel">
@@ -491,7 +493,39 @@ function bboxOf(objs, aps) {
   return isFinite(x0) ? { x0, y0, x1, y1 } : null;
 }
 
-if (typeof module !== 'undefined') module.exports = { tokenize, processGerber, parseDrill, buildDrill, bboxOf };
+/* ---- netlist: FlyingProbeTesting.json do EasyEDA Pro ----
+   Cada pino físico vem repetido na mesma coordenada, com o nome do componente ("C6_2") e com um
+   apelido "PADn_m". Agrupa por coordenada e fica com o nome que não é apelido. A coluna LAYER não
+   serve para saber a camada (vem "T" até nos PTH). */
+function parseNetlist(text) {
+  const j = JSON.parse(text);
+  const u = String(j.lengthUnit || 'mil').toLowerCase();
+  const k = u === 'mm' ? 1 : (u === 'inch' || u === 'in') ? MM : 0.0254;
+  const T = j.pins;
+  if (!T || !Array.isArray(T.fields) || !Array.isArray(T.rows)) throw new Error('falta a tabela "pins"');
+  const ix = (n) => T.fields.indexOf(n);
+  const iN = ix('PIN_NAME'), iX = ix('PIN_X'), iY = ix('PIN_Y'), iNet = ix('NET_NAME'), iSX = ix('PAD_SIZEX'), iSY = ix('PAD_SIZEY'), iH = ix('HOLE_SIZE');
+  if (iN < 0 || iX < 0 || iY < 0 || iNet < 0) throw new Error('faltam colunas na tabela "pins"');
+  const groups = new Map();
+  for (const r of T.rows) {
+    const x = +r[iX] * k, y = +r[iY] * k; if (!isFinite(x) || !isFinite(y)) continue;
+    const key = Math.round(x * 100) + ',' + Math.round(y * 100);
+    const name = String(r[iN] || ''), alias = /^PAD\d*_/i.test(name), net = String(r[iNet] || '');
+    let g = groups.get(key);
+    if (!g) {
+      const sx = (+r[iSX] || 0) * k, sy = (+r[iSY] || 0) * k;
+      groups.set(key, g = { name, alias, x, y, net, padX: sx || sy, pad: Math.max(sx, sy), hole: (+r[iH] || 0) * k });
+    } else if (g.alias && !alias) { g.name = name; g.alias = false; }
+    if (!g.net && net) g.net = net;
+  }
+  const pins = [...groups.values()].map((g) => {
+    const m = g.name.match(/^(.+)_([^_]+)$/);
+    return { name: g.name, ref: m ? m[1] : g.name, num: m ? m[2] : '', x: g.x, y: g.y, net: g.net, padX: g.padX, pad: g.pad, hole: g.hole };
+  });
+  return { pins, nets: new Set(pins.filter((p) => p.net).map((p) => p.net)) };
+}
+
+if (typeof module !== 'undefined') module.exports = { tokenize, processGerber, parseDrill, buildDrill, bboxOf, parseNetlist };
 
 </script>
 <script>
@@ -499,6 +533,35 @@ const $ = (id) => document.getElementById(id);
 const fmt = (v, d = 2) => v.toFixed(d).replace('.', ',');
 const at = (x, y) => `(${fmt(x, 1)}; ${fmt(y, 1)})`;
 const SEVORD = { bad: 0, warn: 1, info: 2, ok: 3 };
+const NEAR = 3; // mm: pino mais longe que isso não entra no texto do aviso
+const PARTCOL = ['#4FC3F7', '#FF7AD9', '#B9F26B', '#FFFFFF', '#FFB23E'];
+
+/* ---------- nomes de pino e de rede ---------- */
+const netTxt = (n) => !n ? 'sem rede' : n[0] === '$' ? `rede sem nome (${n})` : n;   // sozinho
+const netIn = (n) => !n ? 'sem rede' : n[0] === '$' ? `rede sem nome ${n}` : n;      // dentro de parênteses
+const pinTxt = (p) => p.num ? `${p.ref} pino ${p.num}` : p.ref;
+const pinNet = (p) => `${pinTxt(p)} (${netIn(p.net)})`;
+const joinE = (a) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' e ' + a[a.length - 1];
+function listPins(holes, pinOf) {
+  const names = [], seen = new Set(); let vias = 0;
+  for (const h of holes) { const p = pinOf(h); if (!p) { vias++; continue; } const t = pinTxt(p); if (!seen.has(t)) { seen.add(t); names.push(t); } }
+  const shown = names.slice(0, 4), rest = names.length - shown.length;
+  if (rest > 0) shown.push(`mais ${rest}`);
+  if (vias) shown.push(vias === 1 ? '1 via' : `${vias} vias`);
+  return shown.length ? ` (${joinE(shown)})` : '';
+}
+// pixel de cobre (índice) no ponto, ou o mais perto dentro de rmm; -1 se não houver
+function pixelAt(lab, G, x, y, rmm) {
+  const { bb, S, W, H } = G; const cx = Math.floor((x - bb.x0) * S), cy = Math.floor((bb.y1 - y) * S);
+  if (cx >= 0 && cy >= 0 && cx < W && cy < H && lab[cy * W + cx]) return cy * W + cx;
+  const r = Math.ceil((rmm || 0) * S); let best = -1, bd = r * r + 1;
+  for (let dy = -r; dy <= r; dy++) { const yy = cy + dy; if (yy < 0 || yy >= H) continue;
+    for (let dx = -r; dx <= r; dx++) { const xx = cx + dx, d = dx * dx + dy * dy; if (xx < 0 || xx >= W || d >= bd) continue; if (lab[yy * W + xx]) { bd = d; best = yy * W + xx; } } }
+  return best;
+}
+const islandAt = (lab, G, x, y, rmm) => { const i = pixelAt(lab, G, x, y, rmm); return i < 0 ? 0 : lab[i]; };
+function pinAtHole(NL, h) { if (!NL) return null; for (const p of NL.pins) if (Math.hypot(p.x - h.x, p.y - h.y) < 0.1) return p; return null; }
+function nearestPin(pins, x, y, max = Infinity) { let best = null, bd = max; for (const p of pins) { const d = Math.hypot(p.x - x, p.y - y); if (d <= bd) { bd = d; best = p; } } return best ? { p: best, d: bd } : null; }
 const st = { parsed: null, res: null, view: { layer: 'bottom', z: 1, ox: 0, oy: 0 }, sel: -1, hiDia: null, zip: null, base: 'placa', source: '' };
 
 /* ---------- parâmetros ---------- */
@@ -562,7 +625,7 @@ function drawObjs(ctx, objs, aps, tx, ty, S) {
 }
 
 /* ---------- análise de uma camada ---------- */
-function analyzeLayer(name, g, G, holes, P) {
+function analyzeLayer(name, g, G, holes, P, NL) {
   const { bb, S, W, H } = G, N = W * H, finds = [];
   const tx = (x) => (x - bb.x0) * S, ty = (y) => (bb.y1 - y) * S;
   const fx = (px) => bb.x0 + (px + 0.5) / S, fy = (py) => bb.y1 - (py + 0.5) / S;
@@ -581,6 +644,15 @@ function analyzeLayer(name, g, G, holes, P) {
       if (p < N - W && mask[p + W] && !lab[p + W]) { lab[p + W] = nl; stk[sp++] = p + W; } }
     area.push(a); seed.push(i);
   }
+  // pinos da netlist: cada um cai na ilha do centro do pad (ou na mais perto dentro do pad, se o centro for furo)
+  const pinPix = new Map(), islPins = new Map();
+  if (NL) for (const pn of NL.pins) {
+    const i = pixelAt(lab, G, pn.x, pn.y, pn.padX / 2); if (i < 0) continue;
+    pinPix.set(pn, i); const c = lab[i]; if (!islPins.has(c)) islPins.set(c, []); islPins.get(c).push(pn);
+  }
+  // o cobre da ilha c perto de (x, y): o pino mais perto dela, e se está a menos de NEAR mm
+  const side = (c, x, y) => { const r = nearestPin(islPins.get(c) || [], x, y); return r ? { p: r.p, near: r.d <= NEAR } : null; };
+  const sideTxt = (s) => s.near ? pinNet(s.p) : `cobre da ${s.p.net[0] === '$' ? '' : 'rede '}${netIn(s.p.net)}`;
   // folgas: frentes que crescem a partir de cada ilha e se encontram
   const LIM = P.tool + 0.15;
   const owner = new Int32Array(N), src = new Int32Array(N), q = new Int32Array(N); let qh = 0, qt = 0;
@@ -598,14 +670,20 @@ function analyzeLayer(name, g, G, holes, P) {
       else if (ln !== lp) {
         const sn = src[n], nx = sn % W, ny = (sn / W) | 0, gp = (Math.hypot(sx - nx, sy - ny) - 1) / S;
         if (gp < LIM) { const key = lp < ln ? lp * 1e6 + ln : ln * 1e6 + lp; const b = pairs.get(key);
-          if (!b || gp < b.g) pairs.set(key, { g: gp, x: fx((sx + nx) / 2), y: fy((sy + ny) / 2) }); }
+          if (!b || gp < b.g) pairs.set(key, { g: gp, x: fx((sx + nx) / 2), y: fy((sy + ny) / 2), la: lp, ax: fx(sx), ay: fy(sy), lb: ln, bx: fx(nx), by: fy(ny) }); }
       }
     }
   }
   const gaps = [...pairs.values()].sort((a, b) => a.g - b.g);
-  for (const gp of gaps) finds.push({ sev: gp.g < P.tool ? 'bad' : 'warn', layer: name, x: gp.x, y: gp.y,
-    msg: gp.g < P.tool ? `Folga de ${fmt(gp.g)} mm, menor que o corte da ferramenta (${fmt(P.tool)} mm). A fresa não isola aqui e vira curto.`
-      : `Folga de ${fmt(gp.g)} mm, só ${fmt(gp.g - P.tool)} mm acima do corte da ferramenta. Confira na prévia do CopperCAM.` });
+  for (const gp of gaps) {
+    // um pino de cada lado: o mais perto do pixel de origem de cada frente, na própria ilha
+    const sa = side(gp.la, gp.ax, gp.ay), sb = side(gp.lb, gp.bx, gp.by);
+    const ta = sa && (sa.near || (sb && sb.near)) ? sideTxt(sa) : null, tb = sb && (sb.near || (sa && sa.near)) ? sideTxt(sb) : null;
+    const who = ta && tb ? ` entre ${ta} e ${tb}` : ta || tb ? ` junto de ${ta || tb}` : '';
+    finds.push({ sev: gp.g < P.tool ? 'bad' : 'warn', layer: name, x: gp.x, y: gp.y,
+      msg: gp.g < P.tool ? `Folga de ${fmt(gp.g)} mm${who}, menor que o corte da ferramenta (${fmt(P.tool)} mm). A fresa não isola aqui e vira curto.`
+        : `Folga de ${fmt(gp.g)} mm${who}, só ${fmt(gp.g - P.tool)} mm acima do corte da ferramenta. Confira na prévia do CopperCAM.` });
+  }
   // borda
   const edge = new Map(), Bm = P.edge, band = Math.ceil(Bm * S) + 2;
   for (let y = 0; y < H; y++) {
@@ -617,7 +695,10 @@ function analyzeLayer(name, g, G, holes, P) {
       if (d < Bm) { const c = lab[i], e = edge.get(c); if (!e || d < e.d) edge.set(c, { d, x: fx(x), y: fy(y) }); }
     }
   }
-  for (const e of edge.values()) finds.push({ sev: e.d < Bm / 2 ? 'bad' : 'warn', layer: name, x: e.x, y: e.y, msg: `Cobre a ${fmt(e.d)} mm da borda (mínimo ${fmt(Bm, 1)} mm). A fresa de recorte pode comer esse cobre.` });
+  for (const [c, e] of edge) {
+    const s = side(c, e.x, e.y), who = !s || !s.near ? '' : `, perto de ${pinNet(s.p)}`;
+    finds.push({ sev: e.d < Bm / 2 ? 'bad' : 'warn', layer: name, x: e.x, y: e.y, msg: `Cobre a ${fmt(e.d)} mm da borda (mínimo ${fmt(Bm, 1)} mm)${who}. A fresa de recorte pode comer esse cobre.` });
+  }
   // furos x pads desta camada
   const flashes = g.objs.filter((o) => o.t === 'flash' && o.pol !== 'C');
   const grid = new Map(); const gk = (x, y) => Math.round(x * 2) + ',' + Math.round(y * 2);
@@ -636,13 +717,18 @@ function analyzeLayer(name, g, G, holes, P) {
       else if (ring < P.ring) { const k = h.de.toFixed(2) + '|' + dim.toFixed(2); if (!ringGroups.has(k)) ringGroups.set(k, { de: h.de, d: h.d, dim, ring, list: [] }); ringGroups.get(k).list.push(h); }
     } else if (!(inside && mask[hy * W + hx]) && name === 'bottom') noCopper.push(h);
   }
+  // no anel, o pino é o do próprio furo
+  const names = (list) => NL ? listPins(list, (h) => pinAtHole(NL, h)) : '';
   for (const r of ringGroups.values()) finds.push({ sev: 'warn', layer: name, x: r.list[0].x, y: r.list[0].y, pts: r.list.map((h) => [h.x, h.y]),
-    msg: `${r.list.length} furo(s) de ${fmt(r.de)} mm${r.de !== r.d ? ` (broca para furo de ${fmt(r.d)} mm)` : ''} em pad de ${fmt(r.dim)} mm: sobram ${fmt(r.ring)} mm de cobre em volta (mínimo ${fmt(P.ring)} mm).` });
+    msg: `${r.list.length} furo(s) de ${fmt(r.de)} mm${r.de !== r.d ? ` (broca para furo de ${fmt(r.d)} mm)` : ''} em pad de ${fmt(r.dim)} mm${names(r.list)}: sobram ${fmt(r.ring)} mm de cobre em volta (mínimo ${fmt(P.ring)} mm).` });
   if (noCopper.length) finds.push({ sev: 'warn', layer: name, x: noCopper[0].x, y: noCopper[0].y, pts: noCopper.map((h) => [h.x, h.y]),
-    msg: `${noCopper.length} furo(s) sem cobre em volta (pad do tamanho do furo, ou furo de fixação). Tudo bem se for de propósito, mas não dá para soldar neles.` });
-  for (let c = 1; c <= nl; c++) if (!holeComp.has(c) && area[c] / (S * S) > 0.05)
-    finds.push({ sev: 'warn', layer: name, x: fx(seed[c] % W), y: fy((seed[c] / W) | 0), msg: `Cobre solto (${fmt(area[c] / (S * S), 1)} mm², sem nenhum furo). Ele não liga em nada; apague ou ligue ao plano.` });
-  return { mask, gaps, finds };
+    msg: `${noCopper.length} furo(s) sem cobre em volta${names(noCopper)}: pad do tamanho do furo, ou furo de fixação. Tudo bem se for de propósito, mas não dá para soldar neles.` });
+  for (let c = 1; c <= nl; c++) if (!holeComp.has(c) && area[c] / (S * S) > 0.05) {
+    const x = fx(seed[c] % W), y = fy((seed[c] / W) | 0), s = side(c, x, y) || (NL && nearestPin(NL.pins, x, y, NEAR));
+    const who = s && (s.near !== false) ? `, perto de ${pinNet(s.p)}` : '';
+    finds.push({ sev: 'warn', layer: name, x, y, msg: `Cobre solto (${fmt(area[c] / (S * S), 1)} mm², sem nenhum furo)${who}. Ele não liga em nada; apague ou ligue ao plano.` });
+  }
+  return { mask, gaps, finds, lab, nl, pinPix };
 }
 
 function countChains(segs) {
@@ -650,6 +736,102 @@ function countChains(segs) {
   const ends = new Map(); const k = (x, y) => Math.round(x * 50) + ',' + Math.round(y * 50);
   segs.forEach((s, i) => { for (const key of [k(s.x1, s.y1), k(s.x2, s.y2)]) { if (ends.has(key)) par[f(i)] = f(ends.get(key)); else ends.set(key, i); } });
   return new Set(segs.map((_, i) => f(i))).size;
+}
+
+/* ---------- conectividade: curto e rede aberta, pela netlist ----------
+   Nós do union-find: ilhas do Bottom, ilhas da Top (dupla face) e pontas das trilhas da Top (face simples). */
+function connectivity(p, L, G, holes, NL) {
+  const B = L.bottom, T = L.top, nB = B.nl;
+  const par = [0]; const add = () => { par.push(par.length); return par.length - 1; };
+  const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+  const union = (a, b) => { a = find(a); b = find(b); if (a !== b) par[a] = b; };
+  for (let i = 1; i <= nB; i++) add();                 // ilha c do Bottom = nó c
+  if (T) for (let i = 1; i <= T.nl; i++) add();        // ilha c da Top = nó nB + c
+  const links = [];                                     // ligações entre nós, com posição, para achar onde um curto acontece
+  const link = (a, b, x, y) => { union(a, b); links.push({ a, b, x, y }); };
+  if (T) {
+    // dupla face: cada furo passante une a ilha do Bottom e a da Top naquele ponto
+    for (const h of holes) { const r = h.d / 2 + 0.2, b = islandAt(B.lab, G, h.x, h.y, r), t = islandAt(T.lab, G, h.x, h.y, r); if (b && t) link(b, nB + t, h.x, h.y); }
+  } else if (p.top) {
+    // face simples: as trilhas da Top são jumpers. Primeiro junta TODOS os pontos das trilhas (uma cadeia
+    // de vários trechos vira um nó só); só depois liga as pontas ao Bottom. Ligar trecho por trecho direto
+    // às ilhas dá aberto falso, porque os pontos do meio da cadeia não caem em cobre do Bottom.
+    const pts = new Map(), k = (x, y) => Math.round(x * 50) + ',' + Math.round(y * 50);
+    const node = (x, y) => { const kk = k(x, y); let n = pts.get(kk); if (!n) pts.set(kk, n = { id: add(), x, y, deg: 0 }); n.deg++; return n; };
+    for (const s of p.top.objs) if (s.t === 'draw' && s.pol !== 'C') { const a = node(s.x1, s.y1), b = node(s.x2, s.y2); link(a.id, b.id, (s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2); }
+    // o fio do jumper passa por um furo: liga ao Bottom a ponta da cadeia, ou o ponto que fica em cima de um furo
+    for (const n of pts.values()) {
+      if (n.deg !== 1 && !holes.some((h) => Math.hypot(h.x - n.x, h.y - n.y) <= h.d / 2 + 0.25)) continue;
+      const b = islandAt(B.lab, G, n.x, n.y, 0.2); if (b) link(n.id, b, n.x, n.y);
+    }
+  }
+  // pino -> nó (Bottom primeiro; na dupla face, Top se não tiver cobre no Bottom)
+  const pinNode = new Map();
+  for (const pn of NL.pins) {
+    if (!pn.net) continue;
+    const ib = B.pinPix.get(pn), it = T ? T.pinPix.get(pn) : undefined;
+    if (ib !== undefined) pinNode.set(pn, B.lab[ib]); else if (it !== undefined) pinNode.set(pn, nB + T.lab[it]);
+  }
+  const groups = new Map(), byNet = new Map();
+  for (const [pn, n] of pinNode) {
+    const r = find(n); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(pn);
+    if (!byNet.has(pn.net)) byNet.set(pn.net, new Map()); const parts = byNet.get(pn.net); if (!parts.has(r)) parts.set(r, []); parts.get(r).push(pn);
+  }
+  const shorts = [], opens = [];
+  for (const [r, ps] of groups) {
+    const nets = [...new Set(ps.map((x) => x.net))].sort(); if (nets.length < 2) continue;
+    const reps = nets.map((nt) => ps.find((x) => x.net === nt));
+    const sp = shortPoint(r, ps, nets) || { x: reps[0].x, y: reps[0].y };
+    // um pino de cada rede: os mais perto do ponto do curto
+    for (let i = 0; i < nets.length; i++) { const c = nearestPin(ps.filter((x) => x.net === nets[i]), sp.x, sp.y); if (c) reps[i] = c.p; }
+    shorts.push({ nets, reps, ...sp });
+  }
+  for (const [net, parts] of byNet) {
+    if (parts.size < 2) continue;
+    const list = [...parts.values()];
+    // de cada pedaço, o pino mais perto de outro pedaço (é por ali que falta ligar)
+    const reps = list.map((ps, i) => { let best = ps[0], bd = Infinity;
+      for (const a of ps) list.forEach((qs, j) => { if (j !== i) for (const b of qs) { const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < bd) { bd = d; best = a; } } }); return best; });
+    opens.push({ net, parts: list, reps });
+  }
+  return { nets: NL.nets.size, shorts, opens };
+
+  // onde as redes se encontram: dentro de uma ilha (frentes que crescem de cada pino pelo cobre)
+  // ou, se o curto passa por jumper/furo, na ligação entre nós de redes diferentes
+  function shortPoint(r, ps, nets) {
+    for (const [name, Lr, off] of [['bottom', B, 0], ['top', T, nB]]) {
+      if (!Lr) continue;
+      const byIsl = new Map();
+      for (const pn of ps) { const i = Lr.pinPix.get(pn); if (i === undefined || pinNode.get(pn) !== off + Lr.lab[i]) continue; const c = Lr.lab[i]; if (!byIsl.has(c)) byIsl.set(c, []); byIsl.get(c).push([pn, i]); }
+      for (const [c, list] of byIsl) if (new Set(list.map(([pn]) => pn.net)).size > 1) {
+        const pt = meetInIsland(Lr.lab, G, c, list.map(([pn, i]) => [nets.indexOf(pn.net) + 1, i]));
+        if (pt) return { ...pt, layer: name };
+      }
+    }
+    const nodeNet = new Map(); for (const pn of ps) nodeNet.set(pinNode.get(pn), pn.net);
+    const own = links.filter((e) => find(e.a) === r);
+    for (let changed = true; changed;) {
+      changed = false;
+      for (const e of own) { const na = nodeNet.get(e.a), nb = nodeNet.get(e.b);
+        if (na && nb && na !== nb) return { x: e.x, y: e.y };
+        if (na && !nb) { nodeNet.set(e.b, na); changed = true; } else if (nb && !na) { nodeNet.set(e.a, nb); changed = true; } }
+    }
+    return null;
+  }
+}
+// busca em largura dentro da ilha c a partir dos pixels dos pinos; devolve onde frentes de redes diferentes se tocam
+function meetInIsland(lab, G, c, seeds) {
+  const { W, H, bb, S } = G, own = new Int32Array(W * H), q = new Int32Array(W * H); let qt = 0;
+  for (const [id, i] of seeds) if (!own[i]) { own[i] = id; q[qt++] = i; }
+  for (let h = 0; h < qt; h++) {
+    const p = q[h], x = p % W, y = (p / W) | 0, o = own[p];
+    for (const n of [x > 0 ? p - 1 : -1, x < W - 1 ? p + 1 : -1, y > 0 ? p - W : -1, y < H - 1 ? p + W : -1]) {
+      if (n < 0 || lab[n] !== c) continue; const on = own[n];
+      if (!on) { own[n] = o; q[qt++] = n; }
+      else if (on !== o) return { x: bb.x0 + ((p % W + n % W) / 2 + 0.5) / S, y: bb.y1 - (((p / W) | 0) / 2 + ((n / W) | 0) / 2 + 0.5) / S };
+    }
+  }
+  return null;
 }
 
 /* ---------- análise completa ---------- */
@@ -673,8 +855,19 @@ function analyzeAll() {
   const S = Math.min(25, Math.sqrt(8e6 / (bw * bh))), W = Math.ceil(bw * S), H = Math.ceil(bh * S);
   const G = { bb, S, W, H };
   const L = {};
-  L.bottom = analyzeLayer('bottom', p.bottom, G, holes, P); finds.push(...L.bottom.finds);
-  if (P.dual && p.top) { L.top = analyzeLayer('top', p.top, G, holes, P); finds.push(...L.top.finds); }
+  const NL = p.net;
+  L.bottom = analyzeLayer('bottom', p.bottom, G, holes, P, NL); finds.push(...L.bottom.finds);
+  if (P.dual && p.top) { L.top = analyzeLayer('top', p.top, G, holes, P, NL); finds.push(...L.top.finds); }
+  const conn = NL ? connectivity(p, L, G, holes, NL) : null;
+  if (conn) {
+    for (const s of conn.shorts) finds.push({ sev: 'bad', x: s.x, y: s.y, layer: s.layer, center: true, pts: s.reps.map((r, i) => [r.x, r.y, i]),
+      msg: `Curto entre ${joinE(s.nets.map(netTxt))}: ${joinE(s.reps.map(pinTxt))} estão ligados pelo cobre. Separe as redes antes de fresar.` });
+    for (const o of conn.opens) {
+      const head = o.net[0] === '$' ? `A ${netTxt(o.net)} está dividida` : `${o.net} está dividido`;
+      finds.push({ sev: 'bad', x: o.reps[0].x, y: o.reps[0].y, pts: o.parts.flatMap((ps, i) => ps.map((r) => [r.x, r.y, i])),
+        msg: `${head} em ${o.parts.length} partes: ${o.reps.map(pinTxt).join(' | ')}. Falta ligar esses pedaços com trilha ou jumper.` });
+    }
+  }
   for (const n of p.drill.notes) finds.push({ ...n });
   for (const w of p.warns) finds.push({ sev: /macro|incrementa|não são suportad/.test(w) ? 'bad' : 'warn', msg: w });
   if (!p.outline) finds.push({ sev: 'warn', msg: 'Sem contorno da placa (.GKO). O tamanho e a checagem de borda usam o cobre como referência.' });
@@ -683,8 +876,10 @@ function analyzeAll() {
   const jumpers = p.top ? countChains(p.top.objs.filter((o) => o.t === 'draw')) : 0;
   if (!P.dual && jumpers) finds.push({ sev: 'info', msg: `${jumpers} ligação(ões) na camada Top. Na face simples cada uma vira um jumper de fio do lado dos componentes.` });
   if (P.dual) finds.push({ sev: 'info', msg: 'Dupla face fresada não tem furo metalizado: cada via precisa de um fio ou rebite soldado dos dois lados, e pino de componente com trilha na Top precisa de solda em cima também.' });
+  if (conn) finds.push({ sev: 'info', msg: `${conn.nets} redes conferidas pela netlist do EasyEDA (FlyingProbeTesting.json): ${conn.shorts.length ? conn.shorts.length + ' curto(s)' : 'nenhum curto'} e ${conn.opens.length ? conn.opens.length + ' rede(s) aberta(s)' : 'nenhuma rede aberta'}.` });
+  else finds.push({ sev: 'info', msg: p.netErr ? `O FlyingProbeTesting.json não pôde ser lido (${p.netErr}): avisos sem nomes de componente e sem checagem de curto/aberto.` : 'Sem netlist no .zip: avisos sem nomes de componente e sem checagem de curto/aberto.' });
   if (!finds.some((f) => f.sev === 'bad' || f.sev === 'warn')) finds.unshift({ sev: 'ok', msg: `Nenhum problema com esses parâmetros: folgas acima de ${fmt(LIMtxt(P))} mm, nada a menos de ${fmt(P.edge, 1)} mm da borda e anéis de pelo menos ${fmt(P.ring)} mm.` });
-  st.res = { P, G, L, finds, holes, map, jumpers };
+  st.res = { P, G, L, finds, holes, map, jumpers, conn };
   st.sel = -1; st.hiDia = null;
   if (!P.dual || !p.top) st.view.layer = 'bottom';
   buildBases(); renderUI(); fitView(); buildZip();
@@ -753,7 +948,8 @@ function draw() {
   }
   // pontos agrupados do aviso selecionado
   const sel = st.res.finds[st.sel];
-  if (sel && sel.pts && visibleFind(sel)) { ctx.strokeStyle = '#4FC3F7'; ctx.lineWidth = 2; for (const [x0, y0] of sel.pts) { const [x, y] = markerPos({ x: x0, y: y0 }); ctx.beginPath(); ctx.arc(x, y, 9, 0, 2 * Math.PI); ctx.stroke(); } }
+  // (o terceiro número de cada ponto, quando existe, é o pedaço da rede ou a rede do curto: uma cor para cada)
+  if (sel && sel.pts && visibleFind(sel)) { ctx.lineWidth = 2.5; for (const [x0, y0, k] of sel.pts) { const [x, y] = markerPos({ x: x0, y: y0 }); ctx.strokeStyle = PARTCOL[(k || 0) % PARTCOL.length]; ctx.beginPath(); ctx.arc(x, y, 9, 0, 2 * Math.PI); ctx.stroke(); } }
   // marcadores
   st.res.finds.forEach((f, i) => {
     if (!visibleFind(f)) return; const [x, y] = markerPos(f); const on = i === st.sel;
@@ -803,7 +999,7 @@ let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTime
 function select(i, scroll = true) {
   const f = st.res.finds[i]; st.sel = i; st.hiDia = null; markDrills();
   if (f.layer && f.layer !== st.view.layer) setLayer(f.layer);
-  if (f.x !== undefined) { if (f.pts && f.pts.length > 1) fitPoints(f.pts); else centerOn(f.x, f.y, 9); } else draw();
+  if (f.x !== undefined) { if (f.pts && f.pts.length > 1 && !f.center) fitPoints(f.pts); else centerOn(f.x, f.y, 9); } else draw();
   markList(scroll);
   if (scroll && window.innerWidth < 960) $('pv').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -826,13 +1022,15 @@ function status(finds) {
   return ['ok', 'Pronto para fresar'];
 }
 function renderUI() {
-  const { P, G, L, finds, holes, map, jumpers } = st.res, p = st.parsed, dual = P.dual && !!p.top;
+  const { P, G, L, finds, holes, map, jumpers, conn } = st.res, p = st.parsed, dual = P.dual && !!p.top;
   $('results').hidden = false; $('empty').hidden = true;
+  const cerr = conn ? conn.shorts.length + conn.opens.length : 0;
   const [cls, txt] = status(finds); $('pill').className = 'pill ' + cls; $('pill').textContent = txt;
   $('source').textContent = st.source;
   const allGaps = [...L.bottom.gaps, ...(L.top ? L.top.gaps : [])].sort((a, b) => a.g - b.g);
   const items = [['Placa', `${fmt(G.bb.x1 - G.bb.x0, 1)} × ${fmt(G.bb.y1 - G.bb.y0, 1)} mm`], ['Tipo', dual ? 'Dupla face' : 'Face simples'], ['Furos', String(holes.length)],
-    ['Menor folga', allGaps.length ? fmt(allGaps[0].g) + ' mm' : '≥ ' + fmt(LIMtxt(P)) + ' mm'], [dual ? 'Vias' : 'Jumpers', dual ? String(p.drill.holes.filter((h) => p.viaKeys.has(Math.round(h.x * 100) + ',' + Math.round(h.y * 100))).length) : String(jumpers)]];
+    ['Menor folga', allGaps.length ? fmt(allGaps[0].g) + ' mm' : '≥ ' + fmt(LIMtxt(P)) + ' mm'], [dual ? 'Vias' : 'Jumpers', dual ? String(p.drill.holes.filter((h) => p.viaKeys.has(Math.round(h.x * 100) + ',' + Math.round(h.y * 100))).length) : String(jumpers)],
+    ['Redes', !conn ? '—' : cerr ? `${cerr} com erro` : `${conn.nets} ok`]];
   $('stats').innerHTML = ''; for (const [k, v] of items) { const d = document.createElement('div'); const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; d.append(dt, dd); $('stats').append(d); }
   $('laysel').hidden = !dual; setLayer(st.view.layer);
   const ol = $('finds'); ol.innerHTML = '';
@@ -892,6 +1090,14 @@ function reportText() {
   R.push(`Situação: ${status(finds)[1]}`, `Placa: ${fmt(G.bb.x1 - G.bb.x0, 1)} x ${fmt(G.bb.y1 - G.bb.y0, 1)} mm | Furos: ${holes.length} | Menor folga: ${allGaps.length ? fmt(allGaps[0].g) + ' mm' : '>= ' + fmt(LIMtxt(P)) + ' mm'}${dual ? '' : ' | Jumpers na Top: ' + jumpers}`, '');
   R.push('O que conferir (coordenadas em mm, a partir do canto inferior esquerdo):');
   finds.forEach((f, i) => R.push(`${i + 1}. [${{ bad: 'CORRIGIR', warn: 'ATENÇÃO', info: 'INFO', ok: 'OK' }[f.sev]}]${f.layer && dual ? ' [' + (f.layer === 'top' ? 'Top' : 'Bottom') + ']' : ''} ${f.msg}${f.x !== undefined ? ' — em ' + at(f.x, f.y) : ''}`));
+  const conn = st.res.conn;
+  R.push('', 'Conectividade:');
+  if (!conn) R.push(p.netErr ? `  FlyingProbeTesting.json não pôde ser lido (${p.netErr}). Checagem de curto e de rede aberta não feita.` : '  Sem netlist no .zip (FlyingProbeTesting.json). Checagem de curto e de rede aberta não feita.');
+  else {
+    R.push(`  Redes conferidas: ${conn.nets} | Curtos: ${conn.shorts.length} | Redes abertas: ${conn.opens.length}`);
+    for (const s of conn.shorts) R.push(`  Curto entre ${joinE(s.nets.map(netTxt))}: ${joinE(s.reps.map(pinNet))} — em ${at(s.x, s.y)}`);
+    for (const o of conn.opens) R.push(`  ${netTxt(o.net)} em ${o.parts.length} partes: ${o.parts.map((ps) => ps.map(pinTxt).join(', ')).join(' | ')}`);
+  }
   R.push('', 'Furação:'); for (const d of p.drill.dias) R.push(`  ${fmt(d)} mm${P.drills.length ? ' -> broca ' + fmt(map.get(d)) + ' mm' : ''}: ${holes.filter((h) => h.d === d).length} furos`);
   return R.join('\r\n') + '\r\n';
 }
@@ -931,7 +1137,10 @@ function parseAll(files) {
   const viaKeys = new Set();
   for (const f of fds) { const r = parseDrill(f.text, f.name); holes.push(...r.holes); slots.push(...r.slots); warns.push(...r.warns);
     if (/via/i.test(f.name)) for (const h of r.holes) viaKeys.add(Math.round(h.x * 100) + ',' + Math.round(h.y * 100)); }
-  return { bottom, outline, top, drill: buildDrill(holes, slots), warns, fds: fds.map((f) => f.name), viaKeys };
+  // netlist opcional: sem ela, os avisos ficam sem nomes e não há checagem de curto/aberto
+  const fj = pick(/FlyingProbeTesting.*\.json$/i); let net = null, netErr = null;
+  if (fj) { try { net = parseNetlist(fj.text); if (!net.pins.length) { net = null; netErr = 'sem nenhum pino'; } } catch (e) { netErr = e.message || String(e); } }
+  return { bottom, outline, top, drill: buildDrill(holes, slots), warns, fds: fds.map((f) => f.name), viaKeys, net, netErr };
 }
 async function handle(list) {
   if (!list || !list.length) return;
